@@ -1,0 +1,142 @@
+[
+  {
+    "id": "first_steps",
+    "icon": "🚀",
+    "title_en": "First Steps",
+    "title_ru": "Первые шаги",
+    "desc_en": "Enter GameHub, choose your nickname and cyber avatar.",
+    "desc_ru": "Войти в GameHub, выбрать никнейм и кибер-аватар.",
+    "xp": 50,
+    "category": "general"
+  },
+  {
+    "id": "socializer",
+    "icon": "💬",
+    "title_en": "Cyber Socializer",
+    "title_ru": "Кибер-собеседник",
+    "desc_en": "Send your first message in the Global Lounge or private chat.",
+    "desc_ru": "Отправить первое сообщение в общий Лаундж или личный чат.",
+    "xp": 50,
+    "category": "social"
+  },
+  {
+    "id": "challenger",
+    "icon": "⚡",
+    "title_en": "Challenger",
+    "title_ru": "Претендент",
+    "desc_en": "Send a game invitation to another player via unique ID.",
+    "desc_ru": "Отправить приглашение в игру другому игроку по уникальному ID.",
+    "xp": 75,
+    "category": "social"
+  },
+  {
+    "id": "chess_grandmaster",
+    "icon": "♟️",
+    "title_en": "Cyber Grandmaster",
+    "title_ru": "Кибер-Гроссмейстер",
+    "desc_en": "Win a match in Cyber 3D Chess against AI or player.",
+    "desc_ru": "Выиграть партию в Кибер-Шахматы 3D против ИИ или игрока.",
+    "xp": 150,
+    "category": "games"
+  },
+  {
+    "id": "poly_champion",
+    "icon": "⚔️",
+    "title_en": "Arena Vanquisher",
+    "title_ru": "Покоритель 3D Арены",
+    "desc_en": "Reach Level 5 or score 500+ in PolyBattler 3D.",
+    "desc_ru": "Достичь 5 уровня или набрать 500+ очков в PolyBattler 3D.",
+    "xp": 150,
+    "category": "games"
+  },
+  {
+    "id": "phantom_slayer",
+    "icon": "🧪",
+    "title_en": "Master Alchemist",
+    "title_ru": "Мастер-Алхимик",
+    "desc_en": "Banish 30+ phantoms in Phantom Alchemist Survival.",
+    "desc_ru": "Изгнать 30+ призраков в Phantom Alchemist Survival.",
+    "xp": 150,
+    "category": "games"
+  },
+  {
+    "id": "pong_champion",
+    "icon": "🏓",
+    "title_en": "Pong Duelist",
+    "title_ru": "Дуэлянт понга",
+    "desc_en": "Win a match in Cyber Pong 2088 against AI or friend.",
+    "desc_ru": "Выиграть матч в Cyber Pong 2088 против бота или друга.",
+    "xp": 100,
+    "category": "games"
+  },
+  {
+    "id": "snake_master",
+    "icon": "🐍",
+    "title_en": "Neon Serpent",
+    "title_ru": "Неоновый змей",
+    "desc_en": "Score 100 or more points in Cyber Snake Neo.",
+    "desc_ru": "Набрать 100 или более очков в Cyber Snake Neo.",
+    "xp": 120,
+    "category": "games"
+  },
+  {
+    "id": "matrix_architect",
+    "icon": "🧱",
+    "title_en": "Matrix Architect",
+    "title_ru": "Архитектор матрицы",
+    "desc_en": "Clear 10 or more lines of code in Matrix Fall: Cyber Blocks.",
+    "desc_ru": "Очистить 10 или более линий кода в Matrix Fall: Cyber Blocks.",
+    "xp": 120,
+    "category": "games"
+  },
+  {
+    "id": "arcade_veteran",
+    "icon": "🕹️",
+    "title_en": "Arcade Veteran",
+    "title_ru": "Ветеран аркад",
+    "desc_en": "Score 500+ total points in any arcade game sessions.",
+    "desc_ru": "Набрать суммарно 500+ очков в любых аркадных сессиях.",
+    "xp": 100,
+    "category": "games"
+  },
+  {
+    "id": "game_explorer",
+    "icon": "🕹️",
+    "title_en": "Game Explorer",
+    "title_ru": "Игровой исследователь",
+    "desc_en": "Play at least 3 different games in GameHub.",
+    "desc_ru": "Сыграть как минимум в 3 разные игры на платформе GameHub.",
+    "xp": 150,
+    "category": "games"
+  },
+  {
+    "id": "rising_star",
+    "icon": "⭐",
+    "title_en": "Rising Star",
+    "title_ru": "Восходящая звезда",
+    "desc_en": "Reach Level 3 on your player profile.",
+    "desc_ru": "Достигнуть 3-го уровня в профиле игрока.",
+    "xp": 150,
+    "category": "level"
+  },
+  {
+    "id": "matrix_overlord",
+    "icon": "👑",
+    "title_en": "Matrix Overlord",
+    "title_ru": "Владыка матрицы",
+    "desc_en": "Reach Level 5 and prove your cyber mastery.",
+    "desc_ru": "Достигнуть 5-го уровня и доказать свое кибер-мастерство.",
+    "xp": 250,
+    "category": "level"
+  },
+  {
+    "id": "game_creator",
+    "icon": "📦",
+    "title_en": "Repository Architect",
+    "title_ru": "Архитектор репозиториев",
+    "desc_en": "Add a new game from GitHub to the GameHub catalog.",
+    "desc_ru": "Добавить новую игру из GitHub в общий каталог GameHub.",
+    "xp": 200,
+    "category": "developer"
+  }
+]

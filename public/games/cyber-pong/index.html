@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Cyber Pong 2088</title>
+  <style>
+    :root {
+      --bg: #090a12;
+      --neon-cyan: #00f0ff;
+      --neon-pink: #ff0077;
+      --neon-yellow: #ffe600;
+      --panel-bg: rgba(16, 18, 33, 0.85);
+      --border-glow: 0 0 15px rgba(0, 240, 255, 0.4);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+    body {
+      background-color: var(--bg);
+      color: #fff;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow: hidden;
+      padding: 8px;
+    }
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 800px;
+      max-width: 98vw;
+      padding: 10px 16px;
+      background: var(--panel-bg);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 12px 12px 0 0;
+      backdrop-filter: blur(10px);
+    }
+    .player-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .p1-color { color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); }
+    .p2-color { color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
+    .score-display {
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      font-weight: 900;
+      letter-spacing: 4px;
+      background: linear-gradient(180deg, #fff, #99aab5);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .game-container {
+      position: relative;
+      width: 800px;
+      max-width: 98vw;
+      height: 500px;
+      max-height: calc(100dvh - 120px);
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.15);
+      border: 2px solid rgba(0, 240, 255, 0.3);
+      border-radius: 0 0 12px 12px;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #111425 0%, #080911 100%);
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 9, 17, 0.88);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+      text-align: center;
+      padding: 20px;
+    }
+    .overlay.hidden { display: none; }
+    h1 {
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    p {
+      color: #94a3b8;
+      max-width: 480px;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 8px;
+    }
+    button {
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid var(--neon-cyan);
+      color: #fff;
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      touch-action: manipulation;
+    }
+    button:hover, button:active {
+      background: var(--neon-cyan);
+      color: #000;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
+      transform: translateY(-2px);
+    }
+    button.btn-pink {
+      border-color: var(--neon-pink);
+      background: rgba(255, 0, 119, 0.1);
+    }
+    button.btn-pink:hover, button.btn-pink:active {
+      background: var(--neon-pink);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(255, 0, 119, 0.6);
+    }
+    .controls-hint {
+      margin-top: 10px;
+      font-size: 0.82rem;
+      color: #64748b;
+    }
+    .kbd {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      padding: 2px 6px;
+      color: #e2e8f0;
+      font-family: monospace;
+    }
+    .mobile-touch-guide {
+      font-size: 0.78rem;
+      color: var(--neon-cyan);
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="hud">
+    <div class="player-info p1-color">
+      <span>🟦</span>
+      <span id="p1-name">Player 1</span>
+    </div>
+    <div class="score-display">
+      <span id="p1-score">0</span> : <span id="p2-score">0</span>
+    </div>
+    <div class="player-info p2-color">
+      <span id="p2-name">Cyber Bot</span>
+      <span>🟪</span>
+    </div>
+  </div>
+
+  <div class="game-container" id="touchSurface">
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+
+    <div id="startOverlay" class="overlay">
+      <h1>CYBER PONG 2088</h1>
+      <p id="descText">Fast-paced neon reflex battle. Challenge smart cyber bots or duel a friend on the same device or network!</p>
+      <div class="btn-row">
+        <button id="btnAiNormal" onclick="startGame('ai_normal')">VS AI (Normal)</button>
+        <button id="btnAiHard" onclick="startGame('ai_hard')">VS AI (Hardcore)</button>
+        <button id="btnPvp" class="btn-pink" onclick="startGame('pvp')">2 Players (PvP)</button>
+      </div>
+      <div class="controls-hint" id="keysHint">
+        Controls: Player 1 (<span class="kbd">W</span> / <span class="kbd">S</span>) | Player 2 (<span class="kbd">↑</span> / <span class="kbd">↓</span>)
+      </div>
+      <div class="mobile-touch-guide" id="touchHint">
+        📱 On mobile/tablets: Slide your finger up/down on the left or right side!
+      </div>
+    </div>
+
+    <div id="endOverlay" class="overlay hidden">
+      <h1 id="winnerText">VICTORY!</h1>
+      <p id="winnerSub">First to 5 points claims triumph.</p>
+      <div class="btn-row">
+        <button id="btnReplay" onclick="resetGame()">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentLang = 'en';
+
+    function setGameLanguage(lang) {
+      currentLang = lang;
+      if (lang === 'ru') {
+        document.getElementById('descText').innerText = 'Неоновая кибер-битва на рефлексы. Играйте против продвинутого ИИ или сражайтесь с другом!';
+        document.getElementById('btnAiNormal').innerText = 'VS ИИ (Обычный)';
+        document.getElementById('btnAiHard').innerText = 'VS ИИ (Хардкор)';
+        document.getElementById('btnPvp').innerText = '2 Игрока (PvP)';
+        document.getElementById('keysHint').innerHTML = 'Управление: Игрок 1 (<span class="kbd">W</span> / <span class="kbd">S</span>) | Игрок 2 (<span class="kbd">↑</span> / <span class="kbd">↓</span>)';
+        document.getElementById('touchHint').innerText = '📱 На смартфонах/планшетах: Проводите пальцем вверх/вниз для движения!';
+        document.getElementById('btnReplay').innerText = 'Играть снова';
+      } else {
+        document.getElementById('descText').innerText = 'Fast-paced neon reflex battle. Challenge smart cyber bots or duel a friend on the same device or network!';
+        document.getElementById('btnAiNormal').innerText = 'VS AI (Normal)';
+        document.getElementById('btnAiHard').innerText = 'VS AI (Hardcore)';
+        document.getElementById('btnPvp').innerText = '2 Players (PvP)';
+        document.getElementById('keysHint').innerHTML = 'Controls: Player 1 (<span class="kbd">W</span> / <span class="kbd">S</span>) | Player 2 (<span class="kbd">↑</span> / <span class="kbd">↓</span>)';
+        document.getElementById('touchHint').innerText = '📱 On mobile/tablets: Slide your finger up/down on the screen!';
+        document.getElementById('btnReplay').innerText = 'Play Again';
+      }
+    }
+
+    let audioCtx = null;
+    function playBeep(freq, type = 'sine', duration = 0.08) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const touchSurface = document.getElementById('touchSurface');
+
+    const PADDLE_WIDTH = 12;
+    const PADDLE_HEIGHT = 85;
+    const WIN_SCORE = 5;
+
+    let p1 = { x: 20, y: 200, score: 0, speed: 7 };
+    let p2 = { x: 768, y: 200, score: 0, speed: 6 };
+    let ball = { x: 400, y: 250, vx: 5, vy: 3, radius: 8, baseSpeed: 5.5, trail: [] };
+    let particles = [];
+    let keys = {};
+    let gameMode = 'ai_normal';
+    let isRunning = false;
+
+    window.addEventListener('keydown', e => keys[e.code] = true);
+    window.addEventListener('keyup', e => keys[e.code] = false);
+
+    // Touch & Mobile Pointer Controls
+    function handleTouchMove(e) {
+      if (!isRunning) return;
+      const rect = canvas.getBoundingClientRect();
+      const touches = e.touches ? e.touches : [e];
+
+      for (let i = 0; i < touches.length; i++) {
+        const touch = touches[i];
+        const clientY = touch.clientY - rect.top;
+        const clientX = touch.clientX - rect.left;
+        const normalizedY = (clientY / rect.height) * canvas.height;
+
+        if (clientX < rect.width / 2) {
+          p1.y = normalizedY - PADDLE_HEIGHT / 2;
+        } else if (gameMode === 'pvp') {
+          p2.y = normalizedY - PADDLE_HEIGHT / 2;
+        }
+      }
+    }
+
+    touchSurface.addEventListener('touchstart', handleTouchMove, { passive: false });
+    touchSurface.addEventListener('touchmove', handleTouchMove, { passive: false });
+    touchSurface.addEventListener('pointermove', (e) => {
+      if (e.buttons > 0) handleTouchMove(e);
+    });
+
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'GAMEHUB_INIT_PLAYER') {
+        document.getElementById('p1-name').innerText = e.data.nickname || 'Player 1';
+        if (e.data.lang) {
+          setGameLanguage(e.data.lang);
+        }
+      }
+    });
+
+    function spawnHitParticles(x, y, color) {
+      for (let i = 0; i < 12; i++) {
+        particles.push({
+          x, y,
+          vx: (Math.random() - 0.5) * 8,
+          vy: (Math.random() - 0.5) * 8,
+          life: 1,
+          color
+        });
+      }
+    }
+
+    function resetBall(servingPlayer = 1) {
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height / 2;
+      const angle = (Math.random() * Math.PI / 3) - (Math.PI / 6);
+      const dir = servingPlayer === 1 ? 1 : -1;
+      const spd = ball.baseSpeed;
+      ball.vx = Math.cos(angle) * spd * dir;
+      ball.vy = Math.sin(angle) * spd;
+      ball.trail = [];
+    }
+
+    function startGame(mode) {
+      gameMode = mode;
+      document.getElementById('startOverlay').classList.add('hidden');
+      document.getElementById('endOverlay').classList.add('hidden');
+      p1.score = 0;
+      p2.score = 0;
+      updateScoreHud();
+
+      if (mode === 'pvp') {
+        document.getElementById('p2-name').innerText = currentLang === 'ru' ? 'Игрок 2' : 'Player 2';
+        p2.speed = 7;
+      } else if (mode === 'ai_hard') {
+        document.getElementById('p2-name').innerText = currentLang === 'ru' ? 'Кибер-Бот (Хард)' : 'Cyber Bot (Hard)';
+        p2.speed = 6.8;
+      } else {
+        document.getElementById('p2-name').innerText = currentLang === 'ru' ? 'Кибер-Бот' : 'Cyber Bot';
+        p2.speed = 4.8;
+      }
+
+      resetBall();
+      isRunning = true;
+      requestAnimationFrame(loop);
+    }
+
+    function resetGame() {
+      document.getElementById('endOverlay').classList.add('hidden');
+      document.getElementById('startOverlay').classList.remove('hidden');
+      isRunning = false;
+    }
+
+    function updateScoreHud() {
+      document.getElementById('p1-score').innerText = p1.score;
+      document.getElementById('p2-score').innerText = p2.score;
+    }
+
+    function checkWin() {
+      if (p1.score >= WIN_SCORE || p2.score >= WIN_SCORE) {
+        isRunning = false;
+        playBeep(260, 'triangle', 0.5);
+        const p1Won = p1.score >= WIN_SCORE;
+        const winnerName = p1Won ? document.getElementById('p1-name').innerText : document.getElementById('p2-name').innerText;
+        document.getElementById('winnerText').innerText = `${winnerName} ${currentLang === 'ru' ? 'ПОБЕДИЛ!' : 'WINS!'}`;
+        document.getElementById('winnerSub').innerText = `${currentLang === 'ru' ? 'Счёт' : 'Final Score'}: ${p1.score} : ${p2.score}`;
+        document.getElementById('endOverlay').classList.remove('hidden');
+
+        if (window.parent) {
+          window.parent.postMessage({
+            type: 'GAMEHUB_GAME_OVER',
+            gameId: 'cyber-pong',
+            winner: winnerName,
+            score: `${p1.score}:${p2.score}`
+          }, '*');
+        }
+      }
+    }
+
+    function loop() {
+      if (!isRunning) return;
+
+      if (keys['KeyW']) p1.y -= p1.speed;
+      if (keys['KeyS']) p1.y += p1.speed;
+
+      if (gameMode === 'pvp') {
+        if (keys['ArrowUp']) p2.y -= p2.speed;
+        if (keys['ArrowDown']) p2.y += p2.speed;
+      } else {
+        const targetY = ball.y - PADDLE_HEIGHT / 2;
+        const diff = targetY - p2.y;
+        if (Math.abs(diff) > 10) {
+          p2.y += Math.sign(diff) * Math.min(Math.abs(diff), p2.speed);
+        }
+      }
+
+      p1.y = Math.max(0, Math.min(canvas.height - PADDLE_HEIGHT, p1.y));
+      p2.y = Math.max(0, Math.min(canvas.height - PADDLE_HEIGHT, p2.y));
+
+      ball.trail.push({ x: ball.x, y: ball.y });
+      if (ball.trail.length > 8) ball.trail.shift();
+
+      ball.x += ball.vx;
+      ball.y += ball.vy;
+
+      if (ball.y - ball.radius <= 0) {
+        ball.y = ball.radius;
+        ball.vy = -ball.vy;
+        playBeep(440, 'triangle', 0.05);
+      } else if (ball.y + ball.radius >= canvas.height) {
+        ball.y = canvas.height - ball.radius;
+        ball.vy = -ball.vy;
+        playBeep(440, 'triangle', 0.05);
+      }
+
+      if (ball.x - ball.radius <= p1.x + PADDLE_WIDTH &&
+          ball.x + ball.radius >= p1.x &&
+          ball.y >= p1.y && ball.y <= p1.y + PADDLE_HEIGHT &&
+          ball.vx < 0) {
+        const offset = (ball.y - (p1.y + PADDLE_HEIGHT / 2)) / (PADDLE_HEIGHT / 2);
+        const maxAngle = Math.PI / 3;
+        const speed = Math.min(14, Math.hypot(ball.vx, ball.vy) * 1.05);
+        ball.vx = Math.cos(offset * maxAngle) * speed;
+        ball.vy = Math.sin(offset * maxAngle) * speed;
+        spawnHitParticles(ball.x, ball.y, '#00f0ff');
+        playBeep(587, 'square', 0.06);
+      }
+
+      if (ball.x + ball.radius >= p2.x &&
+          ball.x - ball.radius <= p2.x + PADDLE_WIDTH &&
+          ball.y >= p2.y && ball.y <= p2.y + PADDLE_HEIGHT &&
+          ball.vx > 0) {
+        const offset = (ball.y - (p2.y + PADDLE_HEIGHT / 2)) / (PADDLE_HEIGHT / 2);
+        const maxAngle = Math.PI / 3;
+        const speed = Math.min(14, Math.hypot(ball.vx, ball.vy) * 1.05);
+        ball.vx = -Math.cos(offset * maxAngle) * speed;
+        ball.vy = Math.sin(offset * maxAngle) * speed;
+        spawnHitParticles(ball.x, ball.y, '#ff0077');
+        playBeep(659, 'square', 0.06);
+      }
+
+      if (ball.x < 0) {
+        p2.score++;
+        playBeep(220, 'sawtooth', 0.2);
+        updateScoreHud();
+        resetBall(2);
+        checkWin();
+      } else if (ball.x > canvas.width) {
+        p1.score++;
+        playBeep(880, 'sine', 0.2);
+        updateScoreHud();
+        resetBall(1);
+        checkWin();
+      }
+
+      draw();
+
+      if (isRunning) requestAnimationFrame(loop);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < canvas.width; x += 40) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 40) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+      }
+
+      ctx.setLineDash([8, 8]);
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2, 0);
+      ctx.lineTo(canvas.width / 2, canvas.height);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ball.trail.forEach((pt, i) => {
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, ball.radius * (i / ball.trail.length), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0, 240, 255, ${0.1 + (i / ball.trail.length) * 0.4})`;
+        ctx.fill();
+      });
+
+      ctx.save();
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = '#00f0ff';
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = '#00f0ff';
+      ctx.fillStyle = '#00f0ff';
+      ctx.fillRect(p1.x, p1.y, PADDLE_WIDTH, PADDLE_HEIGHT);
+      ctx.restore();
+
+      ctx.save();
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = '#ff0077';
+      ctx.fillStyle = '#ff0077';
+      ctx.fillRect(p2.x, p2.y, PADDLE_WIDTH, PADDLE_HEIGHT);
+      ctx.restore();
+
+      particles.forEach((p, idx) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.04;
+        if (p.life <= 0) {
+          particles.splice(idx, 1);
+        } else {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 3 * p.life, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = p.life;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+      });
+    }
+
+    draw();
+  </script>
+</body>
+</html>

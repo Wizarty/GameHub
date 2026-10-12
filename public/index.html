@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <title>GameHub — Online Gaming & Social Platform</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- Socket.IO Client -->
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <a href="#" class="logo-group">
+      <div class="logo-icon">🎮</div>
+      <div class="logo-text">
+        <span>GAMEHUB</span>
+        <span class="logo-badge">NET</span>
+      </div>
+    </a>
+
+    <!-- Desktop Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="nav-btn active" id="navCatalog">
+        <span>🕹️</span>
+        <span data-i18n="nav.catalog">Game Catalog</span>
+      </button>
+      <button class="nav-btn" id="navChat">
+        <span>💬</span>
+        <span data-i18n="nav.chat">Chat & Lounge</span>
+      </button>
+      <button class="nav-btn" id="navPlayers">
+        <span>👥</span>
+        <span data-i18n="nav.players">Players</span>
+        <span class="badge-counter" id="onlineCountBadge">1</span>
+      </button>
+      <button class="nav-btn" id="navLeaderboard">
+        <span>🏆</span>
+        <span data-i18n="nav.leaderboard">Leaderboard</span>
+      </button>
+      <button class="nav-btn" id="navAchievements">
+        <span>⭐</span>
+        <span data-i18n="nav.achievements">Achievements</span>
+      </button>
+    </nav>
+
+    <!-- Header Actions -->
+    <div class="header-actions">
+      <!-- Language Switcher Button -->
+      <button class="btn-lang-toggle" id="btnLangToggle" title="Switch Language / Сменить язык">
+        <span>🌐</span>
+        <span id="langToggleText">EN</span>
+      </button>
+
+      <!-- Search Player by ID -->
+      <div class="search-id-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="headerSearchIdInput" class="search-id-input" placeholder="Search by ID (#GH-XXXX)..." data-i18n-placeholder="header.search_placeholder" autocomplete="off">
+      </div>
+
+      <!-- Add Game from GitHub Button -->
+      <button class="btn-add-game" id="btnAddGameHeader" title="Add Game from GitHub Repository" data-i18n-title="header.add_game">
+        <span>➕</span>
+        <span data-i18n="header.add_game">Add Game</span>
+      </button>
+
+      <!-- User Profile Badge with Level tag -->
+      <div class="user-profile-badge" id="headerProfileBadge" title="Click to edit profile" data-i18n-title="profile.title">
+        <div class="user-avatar-mini" id="headerPlayerAvatar"></div>
+        <div class="user-details">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="user-name" id="headerPlayerName" data-i18n="header.player_default">Player</span>
+            <span class="header-lvl-tag" id="headerPlayerLevelBadge">Lv.1</span>
+          </div>
+          <span class="user-id-tag" id="headerPlayerId">#GH-????</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main>
+
+    <!-- Hero Banner with ID Card & Level Progress -->
+    <div class="hero-banner">
+      <div class="hero-content">
+        <h1 data-i18n="hero.title">Cyber Platform for Your Games</h1>
+        <p data-i18n="hero.subtitle">Play HTML5 games, chat in real-time, level up your profile, and compete on the global leaderboard!</p>
+
+        <!-- Player XP Progress Bar in Hero -->
+        <div class="hero-xp-widget">
+          <div class="hero-xp-top">
+            <span class="hero-lvl-badge" id="heroLevelBadge">Level 1 • Novice</span>
+            <span class="hero-xp-text" id="heroXpText">0 / 100 XP</span>
+          </div>
+          <div class="hero-xp-bar-bg">
+            <div class="hero-xp-bar-fill" id="heroXpProgressBar" style="width: 10%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-actions">
+        <div class="hero-quick-card">
+          <span class="hero-card-title" data-i18n="hero.my_id_label">Your Unique ID</span>
+          <span class="hero-my-id" id="heroMyId">#GH-????</span>
+          <div style="display:flex; gap:6px; width:100%;">
+            <button class="btn-copy-id" id="btnCopyMyId" style="flex:1;">
+              <span>📋</span>
+              <span data-i18n="hero.copy_id">Copy ID</span>
+            </button>
+            <button class="btn-hero-ach" id="btnHeroAchievements" title="View Achievements">
+              <span>⭐</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 1: Games Catalog -->
+    <section id="viewCatalog">
+      <div class="catalog-toolbar">
+        <div class="filter-pills">
+          <button class="pill-btn active" data-category="all" data-i18n="catalog.all">All Games</button>
+          <button class="pill-btn" data-category="puzzle" data-i18n="catalog.puzzles">Puzzles</button>
+          <button class="pill-btn" data-category="arcade" data-i18n="catalog.arcades">Arcades</button>
+          <button class="pill-btn" data-category="multiplayer" data-i18n="catalog.multiplayer">PvP / Multiplayer</button>
+          <button class="pill-btn" data-category="github" data-i18n="catalog.github">GitHub Projects</button>
+        </div>
+
+        <div class="catalog-search-box">
+          <input type="text" id="catalogSearchInput" class="catalog-search-input" placeholder="Search by title or tags..." data-i18n-placeholder="catalog.search_placeholder">
+        </div>
+      </div>
+
+      <!-- Games Grid -->
+      <div class="games-grid" id="gamesGrid">
+        <!-- Rendered dynamically via games-catalog.js -->
+      </div>
+    </section>
+
+    <!-- VIEW 2: Social & Chat (Hidden by default) -->
+    <section id="viewSocial" class="hidden">
+      <div class="social-view-container">
+
+        <!-- Online Players Sidebar -->
+        <div class="sidebar-players-card">
+          <div class="sidebar-card-header">
+            <span class="sidebar-card-title">
+              <span>👥</span>
+              <span data-i18n="social.online_players">Online Players</span>
+            </span>
+          </div>
+          <div class="players-list-scroll" id="onlinePlayersList">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="chat-main-card">
+          <!-- Chat Tabs (Global + DMs) -->
+          <div class="chat-tabs-bar" id="chatTabsBar">
+            <!-- Tabs rendered dynamically -->
+          </div>
+
+          <!-- Messages Stream -->
+          <div class="chat-messages-container" id="chatMessagesContainer">
+            <!-- Messages rendered dynamically -->
+          </div>
+
+          <!-- Input Bar -->
+          <div class="chat-input-bar">
+            <input type="text" id="chatInputField" class="chat-input-field" placeholder="Message in Global Lounge..." data-i18n-placeholder="social.input_placeholder_global" autocomplete="off">
+            <button class="btn-quick-invite-tool" id="btnQuickInviteTool" title="Invite companion to game" data-i18n-title="social.quick_invite_tooltip">🎮</button>
+            <button class="btn-chat-send" id="btnChatSend" title="Send" data-i18n-title="social.send_tooltip">➤</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- VIEW 3: Leaderboard / Hall of Fame (Hidden by default) -->
+    <section id="viewLeaderboard" class="hidden">
+      <div class="leaderboard-view-container">
+        <div class="lb-header-banner">
+          <h2 data-i18n="leaderboard.title">Cyber Hall of Fame</h2>
+          <p data-i18n="leaderboard.subtitle">Climb ranks, earn XP from matches and achievements, and secure top spots in games!</p>
+
+          <div class="lb-filter-pills">
+            <button class="lb-filter-btn active" data-lb="xp" data-i18n="leaderboard.filter_xp">🏆 Total XP & Levels</button>
+            <button class="lb-filter-btn" data-lb="poly-battler" data-i18n="leaderboard.filter_poly">⚔️ PolyBattler 3D</button>
+            <button class="lb-filter-btn" data-lb="3d-chess" data-i18n="leaderboard.filter_chess">♟️ 3D Chess</button>
+            <button class="lb-filter-btn" data-lb="phantom-alchemist" data-i18n="leaderboard.filter_alchemist">🧪 Phantom Alchemist</button>
+            <button class="lb-filter-btn" data-lb="cyber-snake" data-i18n="leaderboard.filter_snake">🐍 Cyber Snake</button>
+            <button class="lb-filter-btn" data-lb="cyber-pong" data-i18n="leaderboard.filter_pong">🏓 Cyber Pong</button>
+            <button class="lb-filter-btn" data-lb="matrix-fall" data-i18n="leaderboard.filter_matrix">🧱 Matrix Fall</button>
+          </div>
+        </div>
+
+        <!-- Top 3 Podium Display -->
+        <div class="podium-container" id="leaderboardPodium">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- Ranking Table -->
+        <div class="lb-table-container" id="leaderboardList">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Mobile Bottom Navigation Bar -->
+  <nav class="mobile-bottom-nav">
+    <button class="mob-nav-btn active" id="mobNavCatalog">
+      <span>🕹️</span>
+      <span data-i18n="nav.catalog">Catalog</span>
+    </button>
+    <button class="mob-nav-btn" id="mobNavChat">
+      <span>💬</span>
+      <span data-i18n="nav.chat">Chat</span>
+    </button>
+    <button class="mob-nav-btn" id="mobNavPlayers">
+      <span>👥</span>
+      <span data-i18n="nav.players">Players</span>
+      <span class="badge-counter mob-badge" id="mobileOnlineBadge">1</span>
+    </button>
+    <button class="mob-nav-btn" id="mobNavLeaderboard">
+      <span>🏆</span>
+      <span data-i18n="nav.leaderboard">Ranks</span>
+    </button>
+    <button class="mob-nav-btn" id="mobNavAchievements">
+      <span>⭐</span>
+      <span data-i18n="nav.achievements">Badges</span>
+    </button>
+  </nav>
+
+  <!-- In-Hub Game Player Viewport (Overlay) -->
+  <div id="gameViewportWrapper" class="game-viewport-wrapper hidden">
+    <div class="game-viewport-hud">
+      <div class="game-viewport-info">
+        <button class="btn-exit-game" id="btnExitGame">
+          <span>←</span>
+          <span data-i18n="game.back_to_hub">Back to Hub</span>
+        </button>
+        <span class="game-current-title" id="currentGameTitle">Game</span>
+      </div>
+
+      <div class="game-viewport-controls">
+        <button class="hud-btn" id="btnInGameInvite">
+          <span>🎮</span>
+          <span data-i18n="game.invite_by_id">Invite by ID</span>
+        </button>
+        <button class="hud-btn" id="btnToggleInGameChat">
+          <span>💬</span>
+          <span data-i18n="game.ingame_chat">In-Game Chat</span>
+        </button>
+        <button class="hud-btn" id="btnGameFullscreen">
+          <span>⛶</span>
+          <span data-i18n="game.fullscreen">Fullscreen</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="game-iframe-container">
+      <iframe id="gameIframe" class="game-iframe" src="about:blank"></iframe>
+
+      <!-- In-game chat drawer -->
+      <div class="ingame-chat-drawer" id="inGameChatDrawer">
+        <div style="padding: 16px; border-bottom: 1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+          <h4 style="color:#fff;" data-i18n="game.drawer_title">In-Game Chat Overlay</h4>
+          <span style="cursor:pointer; color:#94a3b8;" onclick="document.getElementById('inGameChatDrawer').classList.remove('open')">✕</span>
+        </div>
+        <div style="flex:1; padding:16px; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#94a3b8; text-align:center;">
+          <p data-i18n="game.drawer_desc">Chat with friends and accept game invites without closing your current game!</p>
+          <button class="btn-secondary" style="margin-top:14px;" onclick="document.getElementById('navChat').click(); document.getElementById('btnExitGame').click();" data-i18n="game.open_full_chat">Open Full Chat</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Achievements -->
+  <div id="achievementsModal" class="modal-overlay hidden">
+    <div class="modal-card" style="max-width: 780px;">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">
+            <span>⭐</span>
+            <span data-i18n="achievements.modal_title">Cyber Achievements</span>
+          </h2>
+          <span style="font-size:0.85rem; color:var(--neon-cyan); margin-top:4px; display:block;" id="achievementsSummary">Unlocked 0 of 0</span>
+        </div>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+
+      <!-- Filter Buttons -->
+      <div class="ach-filters-row">
+        <button class="ach-filter-btn active" data-filter="all" data-i18n="achievements.filter_all">All Badges</button>
+        <button class="ach-filter-btn" data-filter="unlocked" data-i18n="achievements.filter_unlocked">Unlocked</button>
+        <button class="ach-filter-btn" data-filter="locked" data-i18n="achievements.filter_locked">Locked</button>
+      </div>
+
+      <!-- Achievements Grid -->
+      <div class="ach-grid" id="achievementsGrid">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Level Up Celebration -->
+  <div id="levelUpModal" class="modal-overlay hidden">
+    <div class="modal-card level-up-card" style="max-width: 440px; text-align:center; align-items:center;">
+      <div class="lvl-up-sparkles">⚡</div>
+      <h2 style="font-size: 2rem; color: var(--neon-cyan); text-transform:uppercase; letter-spacing:2px;">LEVEL UP!</h2>
+      <div class="lvl-up-circle">
+        <span id="lvlUpNumber">2</span>
+      </div>
+      <h3 id="lvlUpTitle" style="color:#fff; font-size:1.3rem; margin-top:8px;">Apprentice</h3>
+      <p style="color:#94a3b8; font-size:0.9rem; margin:10px 0 20px;">You earned enough XP to reach a new rank tier! Keep playing to unlock cyber privileges.</p>
+      <button class="btn-primary" style="width:100%;" onclick="document.getElementById('levelUpModal').classList.add('hidden')">Continue Gaming 🚀</button>
+    </div>
+  </div>
+
+  <!-- MODAL: Onboarding / Profile Setup -->
+  <div id="onboardingModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          <span>⚡</span>
+          <span data-i18n="onboard.title">Welcome to GameHub!</span>
+        </h2>
+      </div>
+
+      <p style="color: #94a3b8; font-size: 0.95rem; line-height: 1.5;" data-i18n="onboard.desc">
+        Choose your gaming nickname and avatar. You will be automatically assigned a unique ID for instant search, leveling, and multiplayer invites.
+      </p>
+
+      <form id="onboardForm" class="form-group">
+        <div class="form-group">
+          <label class="form-label" for="onboardNickname" data-i18n="onboard.nickname_label">Your Nickname:</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="onboardNickname" class="form-input" style="flex:1;" placeholder="Enter nickname..." data-i18n-placeholder="onboard.nickname_placeholder" required maxlength="20">
+            <button type="button" class="btn-secondary" id="btnRandomNick" title="Generate random name" data-i18n="onboard.random_btn">🎲 Random</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" data-i18n="onboard.avatar_label">Choose Avatar:</label>
+          <div class="avatar-selector-grid" id="onboardingAvatarGrid">
+            <!-- Avatars rendered via JS -->
+          </div>
+        </div>
+
+        <div style="background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.2); padding: 12px 16px; border-radius: var(--radius-md); font-size: 0.85rem; color: #cbd5e1;" data-i18n="onboard.tip">
+          💡 <b>How it works:</b> Earn XP by playing games, messaging in lounge, and challenging friends by ID (e.g. <code>#GH-48F1</code>)!
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="btn-primary" style="width: 100%;" data-i18n="onboard.submit">Enter GameHub 🚀</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Edit Profile -->
+  <div id="editProfileModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          <span>⚙️</span>
+          <span data-i18n="profile.title">Edit Profile</span>
+        </h2>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+
+      <form id="editProfileForm" class="form-group">
+        <div class="form-group">
+          <label class="form-label" for="editNickname" data-i18n="profile.nickname_label">Nickname:</label>
+          <input type="text" id="editNickname" class="form-input" required maxlength="20">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" data-i18n="profile.avatar_label">Change Avatar:</label>
+          <div class="avatar-selector-grid" id="editAvatarGrid">
+            <!-- Avatars rendered via JS -->
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary btn-modal-cancel" data-i18n="profile.cancel">Cancel</button>
+          <button type="submit" class="btn-primary" data-i18n="profile.save">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Add Game from GitHub -->
+  <div id="addGameModal" class="modal-overlay hidden">
+    <div class="modal-card" style="max-width: 650px;">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          <span>➕</span>
+          <span data-i18n="add_game.title">Add Game from GitHub</span>
+        </h2>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+
+      <div style="background: rgba(0, 255, 102, 0.08); border: 1px solid rgba(0, 255, 102, 0.2); padding: 12px 16px; border-radius: var(--radius-md); font-size: 0.85rem; color: #cbd5e1; line-height: 1.5;">
+        <b data-i18n="add_game.guide_title">📦 How to connect a game repository:</b><br>
+        <span data-i18n="add_game.guide_step1">1. Clone or download any HTML5 web game from GitHub into <code>public/games/your-game-name/</code>.</span><br>
+        <span data-i18n="add_game.guide_step2">2. Or provide a direct live link to GitHub Pages (e.g. <code>https://user.github.io/game/</code>).</span><br>
+        <span data-i18n="add_game.guide_step3">3. Fill in this form — the game will immediately appear in the GameHub catalog!</span>
+      </div>
+
+      <form id="addGameForm" class="form-group">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+          <div class="form-group">
+            <label class="form-label" data-i18n="add_game.name_label">Game Title *</label>
+            <input type="text" id="addGameTitle" class="form-input" placeholder="e.g. Cyber Drift" data-i18n-placeholder="add_game.name_placeholder" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="add_game.category_label">Category *</label>
+            <select id="addGameCategory" class="form-select">
+              <option value="Arcade" data-i18n="add_game.cat_arcade">Arcade</option>
+              <option value="Puzzle" data-i18n="add_game.cat_puzzle">Puzzle</option>
+              <option value="Action" data-i18n="add_game.cat_action">Action</option>
+              <option value="Racing" data-i18n="add_game.cat_racing">Racing</option>
+              <option value="RPG" data-i18n="add_game.cat_rpg">RPG</option>
+              <option value="Strategy" data-i18n="add_game.cat_strategy">Strategy</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" data-i18n="add_game.path_label">Game Path or URL *</label>
+          <input type="text" id="addGamePath" class="form-input" placeholder="e.g. /games/cyber-drift/index.html or URL" data-i18n-placeholder="add_game.path_placeholder" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" data-i18n="add_game.github_label">GitHub Repository URL (Optional)</label>
+          <input type="url" id="addGameGithub" class="form-input" placeholder="https://github.com/author/game-repo">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" data-i18n="add_game.desc_label">Description</label>
+          <textarea id="addGameDesc" class="form-textarea" placeholder="Short summary of gameplay mechanics..." data-i18n-placeholder="add_game.desc_placeholder"></textarea>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:12px;">
+          <div class="form-group">
+            <label class="form-label" data-i18n="add_game.tags_label">Tags</label>
+            <input type="text" id="addGameTags" class="form-input" placeholder="Retro, 2D, Pixels" data-i18n-placeholder="add_game.tags_placeholder">
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="add_game.author_label">Author / Credit</label>
+            <input type="text" id="addGameAuthor" class="form-input" placeholder="GitHub Community">
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="add_game.icon_label">Icon</label>
+            <input type="text" id="addGameIcon" class="form-input" value="🎮" style="text-align:center;">
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; flex-wrap:wrap; gap:8px;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.9rem;">
+            <input type="checkbox" id="addGameMultiplayer" style="accent-color: var(--neon-cyan); width:18px; height:18px;">
+            <span data-i18n="add_game.multiplayer_check">Supports Multiplayer / Co-op</span>
+          </label>
+
+          <input type="color" id="addGameColor" value="#00f0ff" title="Card accent color" style="background:transparent; border:none; width:36px; height:36px; cursor:pointer;">
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary btn-modal-cancel" data-i18n="add_game.cancel">Cancel</button>
+          <button type="submit" class="btn-primary" data-i18n="add_game.submit">Add to Catalog</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Invite Friend to Game -->
+  <div id="inviteModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          <span>🎮</span>
+          <span data-i18n="invite.title">Invite to Game</span>
+        </h2>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+
+      <form id="inviteFriendForm" class="form-group">
+        <div class="form-group">
+          <label class="form-label" for="invitePlayerIdInput" data-i18n="invite.target_id_label">Recipient Player ID:</label>
+          <input type="text" id="invitePlayerIdInput" class="form-input" placeholder="e.g. GH-48F1" data-i18n-placeholder="invite.target_id_placeholder" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="inviteGameSelect" data-i18n="invite.select_game_label">Select Game:</label>
+          <select id="inviteGameSelect" class="form-select"></select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="inviteCustomMsgInput" data-i18n="invite.message_label">Message (Optional):</label>
+          <input type="text" id="inviteCustomMsgInput" class="form-input" placeholder="Let's play a match together!" data-i18n-placeholder="invite.message_placeholder">
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary btn-modal-cancel" data-i18n="invite.cancel">Cancel</button>
+          <button type="submit" class="btn-primary" data-i18n="invite.send">Send Invitation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Player Public Profile Card -->
+  <div id="playerCardModal" class="modal-overlay hidden">
+    <div class="modal-card" style="text-align: center; align-items: center;">
+      <div style="position:absolute; top:18px; right:20px;">
+        <button class="modal-close-btn">&times;</button>
+      </div>
+
+      <div id="playerCardAvatar" style="width: 80px; height: 80px; border-radius: 50%; overflow: hidden; border: 3px solid var(--neon-cyan); margin-top: 10px; background: #111;">
+      </div>
+
+      <h3 id="playerCardNick" style="font-size: 1.4rem; color: #fff; margin-top: 10px;">Nickname</h3>
+      <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+        <span id="playerCardId" style="font-family: monospace; color: var(--neon-cyan); font-weight: bold; font-size: 1rem;">#GH-0000</span>
+        <span id="playerCardLevelBadge" class="header-lvl-tag">Lv.1</span>
+      </div>
+      <span id="playerCardStatus" style="font-size: 0.88rem; color: #94a3b8; margin-top: 4px;">Online</span>
+
+      <div style="display: flex; gap: 12px; margin-top: 20px; width: 100%;">
+        <button class="btn-primary" id="btnPlayerCardChat" style="flex: 1;">
+          <span>💬</span> <span data-i18n="social.card_chat">Message</span>
+        </button>
+        <button class="btn-secondary" id="btnPlayerCardInvite" style="flex: 1; border-color: var(--neon-pink); color: var(--neon-pink);">
+          <span>🎮</span> <span data-i18n="social.card_invite">Invite</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real-time Floating Toast Notifications Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="/js/i18n.js"></script>
+  <script src="/js/avatars.js"></script>
+  <script src="/js/socket-client.js"></script>
+  <script src="/js/gamification.js"></script>
+  <script src="/js/chat.js"></script>
+  <script src="/js/games-catalog.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

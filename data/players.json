@@ -1,0 +1,92 @@
+{
+  "GH-BOT1": {
+    "id": "GH-BOT1",
+    "nickname": "CyberGhost",
+    "avatar": "avatar-cyber-samurai",
+    "xp": 1450,
+    "level": 6,
+    "achievements": [
+      "first_steps",
+      "socializer",
+      "pong_champion",
+      "snake_master",
+      "poly_champion",
+      "chess_grandmaster"
+    ],
+    "scores": {
+      "cyber-snake": 380,
+      "cyber-pong": 5,
+      "matrix-fall": 840,
+      "poly-battler": 820,
+      "3d-chess": 1200,
+      "phantom-alchemist": 650
+    },
+    "lastSeen": 1791849000000
+  },
+  "GH-BOT2": {
+    "id": "GH-BOT2",
+    "nickname": "NeonViper",
+    "avatar": "avatar-neon-hacker",
+    "xp": 1150,
+    "level": 5,
+    "achievements": [
+      "first_steps",
+      "snake_master",
+      "matrix_architect",
+      "phantom_slayer"
+    ],
+    "scores": {
+      "cyber-snake": 450,
+      "cyber-pong": 4,
+      "matrix-fall": 620,
+      "poly-battler": 540,
+      "3d-chess": 850,
+      "phantom-alchemist": 980
+    },
+    "lastSeen": 1791848500000
+  },
+  "GH-BOT3": {
+    "id": "GH-BOT3",
+    "nickname": "PixelRider",
+    "avatar": "avatar-pixel-knight",
+    "xp": 880,
+    "level": 4,
+    "achievements": [
+      "first_steps",
+      "socializer",
+      "arcade_veteran",
+      "poly_champion"
+    ],
+    "scores": {
+      "cyber-snake": 210,
+      "cyber-pong": 5,
+      "matrix-fall": 410,
+      "poly-battler": 690,
+      "3d-chess": 600,
+      "phantom-alchemist": 420
+    },
+    "lastSeen": 1791848000000
+  },
+  "GH-97AD": {
+    "id": "GH-97AD",
+    "nickname": "NovaGamer_57",
+    "avatar": "avatar-cyber-mage",
+    "xp": 975,
+    "level": 5,
+    "achievements": [
+      "first_steps",
+      "phantom_slayer",
+      "arcade_veteran",
+      "rising_star",
+      "matrix_overlord"
+    ],
+    "scores": {
+      "phantom-alchemist": 2600
+    },
+    "gamesPlayed": [
+      "phantom-alchemist"
+    ],
+    "created": 1791831721848,
+    "lastSeen": 1791831824644
+  }
+}

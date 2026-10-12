@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Phantom Alchemist Survival | GameHub</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #030712;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #f8fafc;
+    }
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* HUD Overlay */
+    .hud-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px;
+    }
+
+    /* Top Stats Bar */
+    .top-stats {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      pointer-events: auto;
+    }
+
+    .stat-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 14px;
+      padding: 10px 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 200px;
+    }
+
+    .bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .bar-icon {
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .bar-track {
+      flex: 1;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.15s ease-out;
+    }
+    .hp-fill {
+      background: linear-gradient(90deg, #ef4444, #f87171);
+      width: 100%;
+    }
+    .xp-fill {
+      background: linear-gradient(90deg, #10b981, #34d399);
+      width: 0%;
+    }
+    .bar-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      font-family: monospace;
+      min-width: 65px;
+      text-align: right;
+    }
+
+    .center-timer-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      backdrop-filter: blur(12px);
+      border-radius: 14px;
+      padding: 8px 20px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .time-digits {
+      font-family: monospace;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #34d399;
+      letter-spacing: 2px;
+    }
+    .score-badge {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .hud-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #f8fafc;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      pointer-events: auto;
+      transition: all 0.2s;
+    }
+    .hud-btn:hover {
+      background: rgba(16, 185, 129, 0.3);
+      border-color: #10b981;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+    }
+
+    /* Virtual Joystick & Mobile Controls */
+    .mobile-controls {
+      position: absolute;
+      bottom: 24px;
+      left: 24px;
+      right: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      pointer-events: none;
+    }
+    .joystick-zone {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 2px dashed rgba(16, 185, 129, 0.3);
+      position: relative;
+      pointer-events: auto;
+      touch-action: none;
+    }
+    .joystick-knob {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10b981, #059669);
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.6);
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .dash-btn {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #06b6d4, #3b82f6);
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.6);
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      color: white;
+      font-weight: 900;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      pointer-events: auto;
+      touch-action: none;
+      transition: transform 0.1s;
+    }
+    .dash-btn:active {
+      transform: scale(0.9);
+    }
+
+    /* Level Up Modal */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(3, 7, 18, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      pointer-events: auto;
+    }
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .levelup-card {
+      background: #0f172a;
+      border: 2px solid #10b981;
+      box-shadow: 0 0 50px rgba(16, 185, 129, 0.4);
+      border-radius: 24px;
+      padding: 32px;
+      max-width: 580px;
+      width: 90%;
+      text-align: center;
+    }
+    .levelup-card h2 {
+      font-size: 2.2rem;
+      font-weight: 900;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #10b981, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .levelup-card p {
+      color: #94a3b8;
+      margin-bottom: 24px;
+      font-size: 0.95rem;
+    }
+
+    .upgrade-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .upgrade-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 14px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      color: white;
+      text-align: left;
+      transition: all 0.2s;
+    }
+    .upgrade-btn:hover {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: #10b981;
+      transform: translateX(4px);
+    }
+    .up-icon {
+      font-size: 2rem;
+      flex-shrink: 0;
+    }
+    .up-title {
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: #34d399;
+      margin-bottom: 4px;
+    }
+    .up-desc {
+      font-size: 0.85rem;
+      color: #cbd5e1;
+    }
+
+    /* Start / Game Over Card */
+    .gameover-card {
+      background: #0f172a;
+      border: 2px solid #ef4444;
+      box-shadow: 0 0 50px rgba(239, 68, 68, 0.4);
+      border-radius: 24px;
+      padding: 36px;
+      max-width: 440px;
+      width: 90%;
+      text-align: center;
+    }
+    .gameover-card h2 {
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: #ef4444;
+      margin-bottom: 8px;
+    }
+    .final-score {
+      font-family: monospace;
+      font-size: 2.8rem;
+      font-weight: 900;
+      color: #ffffff;
+      margin: 16px 0;
+    }
+
+    @media (max-width: 768px) {
+      .top-stats {
+        flex-direction: column;
+        gap: 8px;
+      }
+      .stat-card {
+        min-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Three.js Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- HUD Layer -->
+  <div class="hud-layer">
+    
+    <!-- Top Stats -->
+    <div class="top-stats">
+      <div class="stat-card">
+        <!-- Health Bar -->
+        <div class="bar-wrap">
+          <span class="bar-icon">🧪</span>
+          <div class="bar-track">
+            <div id="hpFill" class="bar-fill hp-fill"></div>
+          </div>
+          <span id="hpLabel" class="bar-label" style="color:#ef4444;">100 / 100</span>
+        </div>
+        <!-- XP Bar -->
+        <div class="bar-wrap">
+          <span class="bar-icon">⚡</span>
+          <div class="bar-track">
+            <div id="xpFill" class="bar-fill xp-fill"></div>
+          </div>
+          <span id="xpLabel" class="bar-label" style="color:#10b981;">Lv. 1</span>
+        </div>
+      </div>
+
+      <div class="center-timer-card">
+        <span class="time-digits" id="timerDigits">00:00</span>
+        <div style="display:flex; flex-direction:column; align-items:flex-start;">
+          <span id="scoreLabel" class="score-badge">Kills: 0</span>
+          <span id="reagentsLabel" class="score-badge" style="color:#38bdf8;">Flasks: Acid & Lightning</span>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:8px;">
+        <button id="btnSound" class="hud-btn" title="Toggle Sound">🔊</button>
+      </div>
+    </div>
+
+    <!-- Mobile Virtual Controls -->
+    <div class="mobile-controls">
+      <div class="joystick-zone" id="joyZone">
+        <div class="joystick-knob" id="joyKnob"></div>
+      </div>
+      <button class="dash-btn" id="btnDash">DASH</button>
+    </div>
+
+  </div>
+
+  <!-- Level Up Modal -->
+  <div id="levelupModal" class="modal-overlay hidden">
+    <div class="levelup-card">
+      <h2>ALCHEMY TRANSCENDENCE</h2>
+      <p>Select an alchemical catalyst to enhance your survival capabilities:</p>
+      <div class="upgrade-grid" id="upgradeList">
+        <!-- Generated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over Modal -->
+  <div id="gameoverModal" class="modal-overlay hidden">
+    <div class="gameover-card">
+      <h2>DEFEAT</h2>
+      <p>The spectral phantoms overwhelmed the laboratory.</p>
+      <div class="final-score" id="finalScoreDigits">0</div>
+      <p id="finalStatsText" style="color:#94a3b8; margin-bottom:24px;">Survived 00:00 • 0 Phantoms Banished</p>
+      <button id="btnRestart" class="hud-btn" style="background:#ef4444; border-color:#ef4444; padding:12px 32px; font-size:1.1rem; width:100%;">
+        Try Again
+      </button>
+    </div>
+  </div>
+
+  <!-- Start Menu Modal -->
+  <div id="startModal" class="modal-overlay">
+    <div class="levelup-card" style="border-color:#38bdf8; box-shadow:0 0 50px rgba(56,189,248,0.4);">
+      <h2 style="background:linear-gradient(135deg, #38bdf8, #a855f7); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+        PHANTOM ALCHEMIST
+      </h2>
+      <p>Craft volatile elemental concoctions and survive waves of spectral entities inside the cursed laboratory.</p>
+      <div style="margin-bottom:24px; color:#cbd5e1; font-size:0.9rem; line-height:1.6;">
+        🎮 <b>Controls:</b><br>
+        • PC: <b>WASD</b> / <b>Arrow Keys</b> to Move, <b>Space</b> to Dash.<br>
+        • Mobile: Use on-screen Joystick & Dash button.<br>
+        • Potions cast automatically at nearby phantoms!
+      </div>
+      <button id="btnStartGame" class="hud-btn" style="background:#10b981; border-color:#10b981; padding:14px 36px; font-size:1.2rem; width:100%;">
+        ENTER LABORATORY ⚡
+      </button>
+    </div>
+  </div>
+
+  <!-- Vendor Scripts -->
+  <script src="../../vendor/three.min.js"></script>
+
+  <!-- Game Engine Script -->
+  <script>
+    (function() {
+      // --- Web Audio Synthesizer ---
+      class AudioSynth {
+        constructor() {
+          this.ctx = null;
+          this.muted = false;
+        }
+        init() {
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) this.ctx = new AudioCtx();
+          }
+        }
+        play(type) {
+          if (this.muted) return;
+          this.init();
+          if (!this.ctx) return;
+          if (this.ctx.state === 'suspended') this.ctx.resume();
+
+          const t = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          if (type === 'acid') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(320, t);
+            osc.frequency.exponentialRampToValueAtTime(140, t + 0.12);
+            gain.gain.setValueAtTime(0.15, t);
+            gain.gain.linearRampToValueAtTime(0.01, t + 0.12);
+            osc.start(t);
+            osc.stop(t + 0.12);
+          } else if (type === 'lightning') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(800, t);
+            osc.frequency.exponentialRampToValueAtTime(180, t + 0.15);
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.linearRampToValueAtTime(0.01, t + 0.15);
+            osc.start(t);
+            osc.stop(t + 0.15);
+          } else if (type === 'hit') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(160, t);
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.linearRampToValueAtTime(0.01, t + 0.1);
+            osc.start(t);
+            osc.stop(t + 0.1);
+          } else if (type === 'levelup') {
+            [440, 554.37, 659.25, 880].forEach((f, i) => {
+              const o = this.ctx.createOscillator();
+              const g = this.ctx.createGain();
+              o.connect(g);
+              g.connect(this.ctx.destination);
+              o.type = 'sine';
+              o.frequency.setValueAtTime(f, t + i * 0.08);
+              g.gain.setValueAtTime(0.2, t + i * 0.08);
+              g.gain.linearRampToValueAtTime(0.01, t + i * 0.08 + 0.25);
+              o.start(t + i * 0.08);
+              o.stop(t + i * 0.08 + 0.25);
+            });
+          }
+        }
+      }
+      const sound = new AudioSynth();
+
+      // --- Three.js Setup ---
+      const container = document.getElementById('canvas-container');
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x030712);
+      scene.fog = new THREE.FogExp2(0x030712, 0.025);
+
+      const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.position.set(0, 18, 14);
+      camera.lookAt(0, 0, 0);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      // Lights
+      const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+      scene.add(ambient);
+
+      const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
+      dirLight.position.set(10, 20, 10);
+      dirLight.castShadow = true;
+      scene.add(dirLight);
+
+      const cauldronLight = new THREE.PointLight(0x10b981, 2.5, 30);
+      cauldronLight.position.set(0, 2, 0);
+      scene.add(cauldronLight);
+
+      // Dungeon Floor & Alchemical Circle
+      const floorGeo = new THREE.PlaneGeometry(80, 80);
+      const floorMat = new THREE.MeshStandardMaterial({
+        color: 0x090f1e,
+        roughness: 0.6,
+        metalness: 0.2
+      });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      // Decorative Alchemical Rune Rings on floor
+      const runeRings = [];
+      for (let i = 1; i <= 3; i++) {
+        const ringGeo = new THREE.RingGeometry(i * 3.5, i * 3.5 + 0.1, 48);
+        const ringMat = new THREE.MeshBasicMaterial({
+          color: i % 2 === 0 ? 0x10b981 : 0x06b6d4,
+          transparent: true,
+          opacity: 0.35,
+          side: THREE.DoubleSide
+        });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.02;
+        scene.add(ring);
+        runeRings.push(ring);
+      }
+
+      // --- Game State & Player ---
+      const state = {
+        status: 'menu', // 'menu', 'playing', 'levelup', 'gameover'
+        time: 0,
+        score: 0,
+        kills: 0,
+        hp: 100,
+        maxHp: 100,
+        xp: 0,
+        maxXp: 30,
+        level: 1,
+        moveSpeed: 0.16,
+        dashCooldown: 0,
+        stats: {
+          damageMult: 1,
+          cooldownMult: 1,
+          acidLevel: 1,
+          lightningLevel: 1,
+          cryoLevel: 0,
+          fireLevel: 0,
+          pickupRadius: 3.5
+        }
+      };
+
+      // Player 3D Mesh (Alchemist)
+      const playerGroup = new THREE.Group();
+      scene.add(playerGroup);
+
+      // Robe body
+      const bodyGeo = new THREE.ConeGeometry(0.7, 1.6, 16);
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0f766e, roughness: 0.3, metalness: 0.4 });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      body.position.y = 0.8;
+      body.castShadow = true;
+      playerGroup.add(body);
+
+      // Head / Hood
+      const headGeo = new THREE.SphereGeometry(0.42, 16, 16);
+      const headMat = new THREE.MeshStandardMaterial({ color: 0x115e59, emissive: 0x10b981, emissiveIntensity: 0.3 });
+      const head = new THREE.Mesh(headGeo, headMat);
+      head.position.y = 1.7;
+      playerGroup.add(head);
+
+      // Orbiting Alchemical Catalyst Orbs
+      const catalystGroup = new THREE.Group();
+      playerGroup.add(catalystGroup);
+
+      const orbMat1 = new THREE.MeshBasicMaterial({ color: 0x10b981 });
+      const orbMat2 = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+      const orb1 = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), orbMat1);
+      const orb2 = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), orbMat2);
+      orb1.position.set(1.1, 1.2, 0);
+      orb2.position.set(-1.1, 1.2, 0);
+      catalystGroup.add(orb1);
+      catalystGroup.add(orb2);
+
+      // Entities Collections
+      const enemies = [];
+      const projectiles = [];
+      const acidPools = [];
+      const essences = []; // XP gems
+      const particles = [];
+
+      // Enemy Prototype geometries
+      const wispGeo = new THREE.SphereGeometry(0.45, 12, 12);
+      const wispMat = new THREE.MeshStandardMaterial({
+        color: 0xa855f7,
+        emissive: 0xc084fc,
+        emissiveIntensity: 0.8,
+        transparent: true,
+        opacity: 0.85
+      });
+
+      const shadowGeo = new THREE.ConeGeometry(0.75, 1.8, 12);
+      const shadowMat = new THREE.MeshStandardMaterial({
+        color: 0x475569,
+        emissive: 0xf43f5e,
+        emissiveIntensity: 0.4
+      });
+
+      const bossGeo = new THREE.DodecahedronGeometry(2.0);
+      const bossMat = new THREE.MeshStandardMaterial({
+        color: 0x1e1b4b,
+        emissive: 0xd946ef,
+        emissiveIntensity: 0.9,
+        metalness: 0.8
+      });
+
+      // --- Weapons & Spells Logic ---
+      let lastAcidThrow = 0;
+      let lastLightningStrike = 0;
+      let lastCryoThrow = 0;
+
+      function spawnAcidFlask(target) {
+        const p = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), new THREE.MeshBasicMaterial({ color: 0x22c55e }));
+        p.position.copy(playerGroup.position);
+        p.position.y = 1.0;
+
+        const targetPos = target.position.clone();
+        const dir = targetPos.clone().sub(playerGroup.position).normalize();
+        projectiles.push({
+          mesh: p,
+          type: 'flask',
+          dir,
+          targetPos,
+          speed: 12,
+          life: 1.0
+        });
+        scene.add(p);
+        sound.play('acid');
+      }
+
+      function spawnAcidPool(pos) {
+        const poolGeo = new THREE.CircleGeometry(2.2, 16);
+        const poolMat = new THREE.MeshBasicMaterial({
+          color: 0x16a34a,
+          transparent: true,
+          opacity: 0.5,
+          side: THREE.DoubleSide
+        });
+        const pool = new THREE.Mesh(poolGeo, poolMat);
+        pool.rotation.x = -Math.PI / 2;
+        pool.position.set(pos.x, 0.05, pos.z);
+        scene.add(pool);
+
+        acidPools.push({
+          mesh: pool,
+          radius: 2.2,
+          damage: 22 * state.stats.damageMult,
+          duration: 3.5
+        });
+      }
+
+      function spawnLightning(target) {
+        // Visual lightning beam
+        const points = [playerGroup.position.clone().add(new THREE.Vector3(0, 1.2, 0)), target.position.clone().add(new THREE.Vector3(0, 0.8, 0))];
+        const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+        const lineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 3 });
+        const line = new THREE.Line(lineGeo, lineMat);
+        scene.add(line);
+
+        setTimeout(() => scene.remove(line), 90);
+        target.userData.hp -= 40 * state.stats.damageMult;
+        sound.play('lightning');
+
+        // Chain to 1 other nearby enemy
+        for (const e of enemies) {
+          if (e !== target && e.position.distanceTo(target.position) < 5) {
+            e.userData.hp -= 25 * state.stats.damageMult;
+            break;
+          }
+        }
+      }
+
+      // --- Enemy Spawner ---
+      let nextSpawnTime = 0;
+      let bossSpawnTime = 60; // Every 60s
+
+      function spawnEnemy() {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 22 + Math.random() * 6;
+        const x = playerGroup.position.x + Math.cos(angle) * dist;
+        const z = playerGroup.position.z + Math.sin(angle) * dist;
+
+        const isShadow = state.time > 20 && Math.random() > 0.6;
+        const mesh = new THREE.Mesh(isShadow ? shadowGeo : wispGeo, isShadow ? shadowMat : wispMat);
+        mesh.position.set(x, isShadow ? 0.9 : 0.6, z);
+        mesh.castShadow = true;
+
+        mesh.userData = {
+          hp: isShadow ? 50 : 25,
+          speed: isShadow ? 0.065 : 0.09,
+          damage: isShadow ? 16 : 9,
+          isBoss: false
+        };
+
+        scene.add(mesh);
+        enemies.push(mesh);
+      }
+
+      function spawnBoss() {
+        const angle = Math.random() * Math.PI * 2;
+        const x = playerGroup.position.x + Math.cos(angle) * 25;
+        const z = playerGroup.position.z + Math.sin(angle) * 25;
+
+        const mesh = new THREE.Mesh(bossGeo, bossMat);
+        mesh.position.set(x, 2.2, z);
+        mesh.castShadow = true;
+        mesh.userData = {
+          hp: 450 + state.time * 5,
+          maxHp: 450 + state.time * 5,
+          speed: 0.05,
+          damage: 30,
+          isBoss: true
+        };
+        scene.add(mesh);
+        enemies.push(mesh);
+      }
+
+      // --- Essence (XP Gems) ---
+      const gemGeo = new THREE.OctahedronGeometry(0.24);
+      const gemMat = new THREE.MeshBasicMaterial({ color: 0x34d399 });
+
+      function dropEssence(pos) {
+        const gem = new THREE.Mesh(gemGeo, gemMat);
+        gem.position.set(pos.x, 0.4, pos.z);
+        scene.add(gem);
+        essences.push(gem);
+      }
+
+      // --- Input & Controls Handling ---
+      const keys = {};
+      window.addEventListener('keydown', e => { keys[e.code] = true; });
+      window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+      let joyDir = { x: 0, z: 0 };
+      const joyZone = document.getElementById('joyZone');
+      const joyKnob = document.getElementById('joyKnob');
+
+      if (joyZone) {
+        let dragging = false;
+        let startPos = { x: 0, y: 0 };
+
+        joyZone.addEventListener('pointerdown', e => {
+          dragging = true;
+          startPos = { x: e.clientX, y: e.clientY };
+          joyZone.setPointerCapture(e.pointerId);
+        });
+
+        window.addEventListener('pointermove', e => {
+          if (!dragging) return;
+          const dx = e.clientX - startPos.x;
+          const dy = e.clientY - startPos.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const maxDist = 45;
+          const angle = Math.atan2(dy, dx);
+          const clamped = Math.min(dist, maxDist);
+
+          joyKnob.style.transform = `translate(calc(-50% + ${Math.cos(angle) * clamped}px), calc(-50% + ${Math.sin(angle) * clamped}px))`;
+          joyDir.x = (Math.cos(angle) * clamped) / maxDist;
+          joyDir.z = (Math.sin(angle) * clamped) / maxDist;
+        });
+
+        const stopJoy = () => {
+          dragging = false;
+          joyKnob.style.transform = `translate(-50%, -50%)`;
+          joyDir.x = 0;
+          joyDir.z = 0;
+        };
+        window.addEventListener('pointerup', stopJoy);
+        window.addEventListener('pointercancel', stopJoy);
+      }
+
+      function triggerDash() {
+        if (state.dashCooldown <= 0) {
+          state.dashCooldown = 2.0;
+          playerGroup.position.x += (keys['KeyD'] ? 4 : (keys['KeyA'] ? -4 : (joyDir.x * 5 || 0)));
+          playerGroup.position.z += (keys['KeyS'] ? 4 : (keys['KeyW'] ? -4 : (joyDir.z * 5 || 0)));
+          sound.play('hit');
+        }
+      }
+
+      document.getElementById('btnDash').addEventListener('click', triggerDash);
+
+      // --- Game Over & Level Up Modals ---
+      function triggerLevelUp() {
+        state.status = 'levelup';
+        sound.play('levelup');
+
+        const list = document.getElementById('upgradeList');
+        list.innerHTML = '';
+
+        const allUpgrades = [
+          { id: 'acid_plus', icon: '🧪', title: 'Acid Flask Volatility', desc: '+30% Acid damage and pool duration.' },
+          { id: 'lightning_plus', icon: '⚡', title: 'Aether Spark Arcs', desc: 'Lightning chains to +2 additional spectres.' },
+          { id: 'speed_plus', icon: '👢', title: 'Quicksilver Boots', desc: '+20% Alchemist movement speed.' },
+          { id: 'heal_plus', icon: '❤️', title: 'Elixir of Rebirth', desc: 'Instantly restore +50 HP and +20 Max HP.' },
+          { id: 'magnet_plus', icon: '🧲', title: 'Alchemical Magnetism', desc: '+50% Essence collection radius.' }
+        ];
+
+        // Shuffle & pick 3
+        allUpgrades.sort(() => Math.random() - 0.5).slice(0, 3).forEach(up => {
+          const btn = document.createElement('div');
+          btn.className = 'upgrade-btn';
+          btn.innerHTML = `
+            <span class="up-icon">${up.icon}</span>
+            <div>
+              <div class="up-title">${up.title}</div>
+              <div class="up-desc">${up.desc}</div>
+            </div>
+          `;
+          btn.onclick = () => applyUpgrade(up.id);
+          list.appendChild(btn);
+        });
+
+        document.getElementById('levelupModal').classList.remove('hidden');
+      }
+
+      function applyUpgrade(id) {
+        if (id === 'acid_plus') state.stats.damageMult += 0.3;
+        else if (id === 'lightning_plus') state.stats.damageMult += 0.25;
+        else if (id === 'speed_plus') state.moveSpeed += 0.035;
+        else if (id === 'heal_plus') {
+          state.maxHp += 20;
+          state.hp = Math.min(state.maxHp, state.hp + 50);
+        } else if (id === 'magnet_plus') {
+          state.stats.pickupRadius += 2.5;
+        }
+
+        document.getElementById('levelupModal').classList.add('hidden');
+        state.status = 'playing';
+      }
+
+      function triggerGameOver() {
+        state.status = 'gameover';
+        sound.play('hit');
+
+        document.getElementById('finalScoreDigits').innerText = state.score;
+        const mins = Math.floor(state.time / 60).toString().padStart(2, '0');
+        const secs = Math.floor(state.time % 60).toString().padStart(2, '0');
+        document.getElementById('finalStatsText').innerText = `Survived ${mins}:${secs} • ${state.kills} Phantoms Banished`;
+        document.getElementById('gameoverModal').classList.remove('hidden');
+
+        // Emits score to GameHub Platform
+        try {
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+              type: 'GAMEHUB_GAME_OVER',
+              gameId: 'phantom-alchemist',
+              score: state.score,
+              metadata: {
+                kills: state.kills,
+                survivedSeconds: Math.floor(state.time),
+                level: state.level
+              }
+            }, '*');
+          }
+        } catch (e) {}
+      }
+
+      function startGame() {
+        state.status = 'playing';
+        state.time = 0;
+        state.score = 0;
+        state.kills = 0;
+        state.hp = 100;
+        state.maxHp = 100;
+        state.xp = 0;
+        state.maxXp = 30;
+        state.level = 1;
+        state.moveSpeed = 0.16;
+
+        playerGroup.position.set(0, 0, 0);
+
+        // Clear arrays
+        enemies.forEach(e => scene.remove(e));
+        enemies.length = 0;
+        projectiles.forEach(p => scene.remove(p.mesh));
+        projectiles.length = 0;
+        acidPools.forEach(a => scene.remove(a.mesh));
+        acidPools.length = 0;
+        essences.forEach(e => scene.remove(e));
+        essences.length = 0;
+
+        document.getElementById('startModal').classList.add('hidden');
+        document.getElementById('gameoverModal').classList.add('hidden');
+        document.getElementById('levelupModal').classList.add('hidden');
+      }
+
+      document.getElementById('btnStartGame').addEventListener('click', startGame);
+      document.getElementById('btnRestart').addEventListener('click', startGame);
+
+      document.getElementById('btnSound').addEventListener('click', () => {
+        sound.muted = !sound.muted;
+        document.getElementById('btnSound').innerText = sound.muted ? '🔇' : '🔊';
+      });
+
+      // --- Main Game Loop ---
+      let lastClock = performance.now();
+
+      function update() {
+        requestAnimationFrame(update);
+
+        const now = performance.now();
+        const delta = Math.min((now - lastClock) / 1000, 0.1);
+        lastClock = now;
+
+        if (state.status !== 'playing') {
+          renderer.render(scene, camera);
+          return;
+        }
+
+        state.time += delta;
+        if (state.dashCooldown > 0) state.dashCooldown -= delta;
+
+        // Animate Runes & Catalyst Orbs
+        catalystGroup.rotation.y += 0.05;
+        runeRings.forEach((r, idx) => {
+          r.rotation.z += (idx % 2 === 0 ? 0.002 : -0.002);
+        });
+
+        // 1. Player Movement
+        let mx = 0, mz = 0;
+        if (keys['KeyW'] || keys['ArrowUp']) mz -= 1;
+        if (keys['KeyS'] || keys['ArrowDown']) mz += 1;
+        if (keys['KeyA'] || keys['ArrowLeft']) mx -= 1;
+        if (keys['KeyD'] || keys['ArrowRight']) mx += 1;
+        if (keys['Space']) triggerDash();
+
+        if (joyDir.x !== 0 || joyDir.z !== 0) {
+          mx = joyDir.x;
+          mz = joyDir.z;
+        }
+
+        const moveLen = Math.sqrt(mx * mx + mz * mz);
+        if (moveLen > 0) {
+          const normX = mx / (moveLen > 1 ? moveLen : 1);
+          const normZ = mz / (moveLen > 1 ? moveLen : 1);
+          playerGroup.position.x += normX * state.moveSpeed;
+          playerGroup.position.z += normZ * state.moveSpeed;
+          playerGroup.rotation.y = Math.atan2(normX, normZ);
+        }
+
+        // Camera follow
+        camera.position.x = playerGroup.position.x;
+        camera.position.z = playerGroup.position.z + 14;
+        camera.lookAt(playerGroup.position.x, 0, playerGroup.position.z);
+        cauldronLight.position.set(playerGroup.position.x, 2, playerGroup.position.z);
+
+        // 2. Weapon Autocasting
+        const tSec = state.time;
+        // Find closest enemy
+        let closest = null;
+        let closestDist = Infinity;
+        for (const e of enemies) {
+          const d = e.position.distanceTo(playerGroup.position);
+          if (d < closestDist) {
+            closestDist = d;
+            closest = e;
+          }
+        }
+
+        if (closest && closestDist < 16) {
+          // Acid Flask
+          if (tSec - lastAcidThrow > 1.2 * state.stats.cooldownMult) {
+            lastAcidThrow = tSec;
+            spawnAcidFlask(closest);
+          }
+          // Lightning
+          if (tSec - lastLightningStrike > 1.8 * state.stats.cooldownMult) {
+            lastLightningStrike = tSec;
+            spawnLightning(closest);
+          }
+        }
+
+        // 3. Update Projectiles
+        for (let i = projectiles.length - 1; i >= 0; i--) {
+          const p = projectiles[i];
+          p.mesh.position.addScaledVector(p.dir, p.speed * delta);
+          p.life -= delta;
+
+          if (p.life <= 0 || p.mesh.position.distanceTo(p.targetPos) < 1.0) {
+            spawnAcidPool(p.mesh.position);
+            scene.remove(p.mesh);
+            projectiles.splice(i, 1);
+          }
+        }
+
+        // 4. Update Acid Pools
+        for (let i = acidPools.length - 1; i >= 0; i--) {
+          const pool = acidPools[i];
+          pool.duration -= delta;
+
+          // Damage enemies in pool
+          for (const e of enemies) {
+            if (e.position.distanceTo(pool.mesh.position) < pool.radius) {
+              e.userData.hp -= pool.damage * delta;
+            }
+          }
+
+          if (pool.duration <= 0) {
+            scene.remove(pool.mesh);
+            acidPools.splice(i, 1);
+          }
+        }
+
+        // 5. Enemy Spawning & AI
+        if (state.time > nextSpawnTime) {
+          spawnEnemy();
+          nextSpawnTime = state.time + Math.max(0.25, 1.8 - state.time * 0.015);
+        }
+        if (state.time > bossSpawnTime) {
+          spawnBoss();
+          bossSpawnTime += 60;
+        }
+
+        for (let i = enemies.length - 1; i >= 0; i--) {
+          const e = enemies[i];
+          const dir = playerGroup.position.clone().sub(e.position).normalize();
+          e.position.addScaledVector(dir, e.userData.speed);
+
+          // Rotate boss
+          if (e.userData.isBoss) {
+            e.rotation.x += 0.02;
+            e.rotation.y += 0.03;
+          }
+
+          // Damage player on contact
+          if (e.position.distanceTo(playerGroup.position) < (e.userData.isBoss ? 2.5 : 1.1)) {
+            state.hp -= e.userData.damage * delta * 2;
+            sound.play('hit');
+            if (state.hp <= 0) {
+              triggerGameOver();
+              return;
+            }
+          }
+
+          // Death check
+          if (e.userData.hp <= 0) {
+            dropEssence(e.position);
+            state.kills++;
+            state.score += e.userData.isBoss ? 500 : 25;
+            scene.remove(e);
+            enemies.splice(i, 1);
+          }
+        }
+
+        // 6. Essence Pickups
+        for (let i = essences.length - 1; i >= 0; i--) {
+          const gem = essences[i];
+          gem.rotation.y += 0.05;
+          const dist = gem.position.distanceTo(playerGroup.position);
+
+          if (dist < state.stats.pickupRadius) {
+            // Magnetize to player
+            gem.position.lerp(playerGroup.position, 0.15);
+          }
+
+          if (dist < 1.0) {
+            state.xp += 10;
+            state.score += 15;
+            if (state.xp >= state.maxXp) {
+              state.level++;
+              state.xp -= state.maxXp;
+              state.maxXp = Math.floor(state.maxXp * 1.3);
+              triggerLevelUp();
+            }
+            scene.remove(gem);
+            essences.splice(i, 1);
+          }
+        }
+
+        // 7. Update HUD Elements
+        document.getElementById('hpFill').style.width = `${Math.max(0, (state.hp / state.maxHp) * 100)}%`;
+        document.getElementById('hpLabel').innerText = `${Math.ceil(state.hp)} / ${state.maxHp}`;
+        document.getElementById('xpFill').style.width = `${Math.min(100, (state.xp / state.maxXp) * 100)}%`;
+        document.getElementById('xpLabel').innerText = `Lv. ${state.level}`;
+
+        const mins = Math.floor(state.time / 60).toString().padStart(2, '0');
+        const secs = Math.floor(state.time % 60).toString().padStart(2, '0');
+        document.getElementById('timerDigits').innerText = `${mins}:${secs}`;
+        document.getElementById('scoreLabel').innerText = `Kills: ${state.kills} | Score: ${state.score}`;
+
+        renderer.render(scene, camera);
+      }
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      requestAnimationFrame(update);
+    })();
+  </script>
+</body>
+</html>
