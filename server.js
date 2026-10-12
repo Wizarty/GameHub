@@ -15,8 +15,9 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 4000;
+const isVercel = !!process.env.VERCEL;
 const GAMES_FILE = path.join(__dirname, 'data', 'games.json');
-const PLAYERS_FILE = path.join(__dirname, 'data', 'players.json');
+const PLAYERS_FILE = isVercel ? path.join('/tmp', 'players.json') : path.join(__dirname, 'data', 'players.json');
 const ACHIEVEMENTS_FILE = path.join(__dirname, 'data', 'achievements.json');
 
 // Middleware
@@ -67,6 +68,12 @@ function loadAchievements() {
 }
 
 function loadAllPlayers() {
+  if (isVercel && !fs.existsSync(PLAYERS_FILE)) {
+    const seedFile = path.join(__dirname, 'data', 'players.json');
+    const seedData = readJsonFile(seedFile, {});
+    writeJsonFile(PLAYERS_FILE, seedData);
+    return seedData;
+  }
   return readJsonFile(PLAYERS_FILE, {});
 }
 
