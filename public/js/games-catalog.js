@@ -277,20 +277,7 @@ class GameHubCatalog {
     }
 
 
-    const btnInGameChat = document.getElementById('btnToggleInGameChat');
-    if (btnInGameChat) {
-      btnInGameChat.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (window.gameHubChat) {
-          window.gameHubChat.toggleInGameDrawer();
-        } else {
-          const drawer = document.getElementById('inGameChatDrawer');
-          drawer?.classList.toggle('open');
-          btnInGameChat.classList.toggle('active-btn');
-        }
-      });
-    }
+
 
     const btnInGameInvite = document.getElementById('btnInGameInvite');
     if (btnInGameInvite) {

@@ -254,7 +254,7 @@
           <span>🎮</span>
           <span class="hud-btn-label" data-i18n="game.invite_by_id">Invite by ID</span>
         </button>
-        <button class="hud-btn" id="btnToggleInGameChat" title="In-Game Chat">
+        <button class="hud-btn" id="btnToggleInGameChat" title="In-Game Chat" onclick="window.gameHubChat ? window.gameHubChat.toggleInGameDrawer() : document.getElementById('inGameChatDrawer')?.classList.toggle('open')">
           <span>💬</span>
           <span class="hud-btn-label" data-i18n="game.ingame_chat">In-Game Chat</span>
           <span class="hud-unread-badge hidden" id="inGameChatBadge">0</span>
@@ -277,7 +277,7 @@
             <h4 class="ingame-chat-title" data-i18n="game.drawer_title">In-Game Chat</h4>
           </div>
           <div class="ingame-chat-header-actions">
-            <button class="ingame-chat-close-btn" id="btnCloseInGameChat" title="Close" aria-label="Close" data-i18n-title="game.close_chat">✕</button>
+            <button class="ingame-chat-close-btn" id="btnCloseInGameChat" title="Close" aria-label="Close" data-i18n-title="game.close_chat" onclick="window.gameHubChat ? window.gameHubChat.closeInGameDrawer() : document.getElementById('inGameChatDrawer')?.classList.remove('open')">✕</button>
           </div>
         </div>
 
@@ -296,7 +296,7 @@
           <!-- Mention Autocomplete Dropdown -->
           <div class="chat-mention-dropdown hidden" id="inGameMentionDropdown"></div>
           <input type="text" id="inGameChatInput" class="ingame-chat-input" placeholder="Message in Global Lounge..." data-i18n-placeholder="social.input_placeholder_global" autocomplete="off">
-          <button class="ingame-chat-send-btn" id="btnSendInGameChat" title="Send" data-i18n-title="social.send_tooltip">➤</button>
+          <button class="ingame-chat-send-btn" id="btnSendInGameChat" title="Send" data-i18n-title="social.send_tooltip" onclick="window.gameHubChat && window.gameHubChat.sendInGameMessage()">➤</button>
         </div>
       </div>
     </div>
