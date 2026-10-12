@@ -15,8 +15,8 @@ class GameHubGamification {
   }
 
   async init() {
-    await this.fetchAchievements();
     this.setupListeners();
+    this.fetchAchievements().catch(e => console.warn('fetchAchievements error:', e));
 
     // Listen to Socket events
     window.hubSocket.on('player:ready', ({ player }) => {

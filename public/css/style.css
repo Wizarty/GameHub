@@ -48,6 +48,11 @@ body {
   overflow-x: hidden;
 }
 
+/* Global Hidden Visibility State */
+.hidden {
+  display: none !important;
+}
+
 /* Typography & Layout Best Practices (modern-web-guidance) */
 h1, h2, h3, h4, h5, h6,
 .hero-content h1,

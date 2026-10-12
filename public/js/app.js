@@ -9,52 +9,67 @@ class GameHubApp {
     this.toastContainer = document.getElementById('toastContainer');
 
     // 1. Initialize i18n first
-    window.i18n.updateDOM();
+    if (window.i18n && window.i18n.updateDOM) {
+      window.i18n.updateDOM();
+    }
 
-    // 2. Setup Language Switcher
+    // 2. Setup Core UI Listeners First (Navigation, Language, Modals)
     this.setupLanguageSwitcher();
-
-    // 3. Initialize Modules
-    window.hubSocket.init();
-    window.gameHubChat.init();
-    window.gameHubCatalog.init();
-    window.gameHubGamification.init();
-
-    // 4. Setup Navigation (Desktop & Mobile)
     this.setupNavigation();
-
-    // 5. Setup Onboarding & Profile Modal
     this.setupProfileModals();
-
-    // 6. Setup Global Search by ID
     this.setupSearchById();
-
-    // 7. Setup URL parameters handlers
     this.handleUrlParams();
 
-    // 8. Listen for Socket events
-    window.hubSocket.on('player:ready', ({ player }) => {
-      this.updateHeaderProfile(player);
-    });
+    // 3. Initialize Independent Submodules Safely
+    try {
+      if (window.hubSocket && window.hubSocket.init) window.hubSocket.init();
+    } catch (err) {
+      console.warn('hubSocket init error:', err);
+    }
 
-    window.hubSocket.on('game:invite_received', (invite) => {
-      this.showInviteToast(invite);
-    });
+    try {
+      if (window.gameHubChat && window.gameHubChat.init) window.gameHubChat.init();
+    } catch (err) {
+      console.warn('gameHubChat init error:', err);
+    }
 
-    window.hubSocket.on('game:invite_response', (resp) => {
-      if (resp.accepted) {
-        this.showSimpleToast(window.i18n.t('toast.invite_accepted_by_other', { nick: resp.fromNickname, game: resp.gameTitle }), 'success');
-      } else {
-        this.showSimpleToast(window.i18n.t('toast.invite_declined_by_other', { nick: resp.fromNickname }), 'info');
-      }
-    });
+    try {
+      if (window.gameHubCatalog && window.gameHubCatalog.init) window.gameHubCatalog.init();
+    } catch (err) {
+      console.warn('gameHubCatalog init error:', err);
+    }
+
+    try {
+      if (window.gameHubGamification && window.gameHubGamification.init) window.gameHubGamification.init();
+    } catch (err) {
+      console.warn('gameHubGamification init error:', err);
+    }
+
+    // 4. Listen for Socket events
+    if (window.hubSocket && window.hubSocket.on) {
+      window.hubSocket.on('player:ready', ({ player }) => {
+        this.updateHeaderProfile(player);
+      });
+
+      window.hubSocket.on('game:invite_received', (invite) => {
+        this.showInviteToast(invite);
+      });
+
+      window.hubSocket.on('game:invite_response', (resp) => {
+        if (resp.accepted) {
+          this.showSimpleToast(window.i18n.t('toast.invite_accepted_by_other', { nick: resp.fromNickname, game: resp.gameTitle }), 'success');
+        } else {
+          this.showSimpleToast(window.i18n.t('toast.invite_declined_by_other', { nick: resp.fromNickname }), 'info');
+        }
+      });
+    }
 
     window.addEventListener('languageChanged', () => {
       this.updateAvatarTooltips();
     });
 
     // Check if user is already logged in
-    const saved = window.hubSocket.getSavedProfile();
+    const saved = window.hubSocket && window.hubSocket.getSavedProfile ? window.hubSocket.getSavedProfile() : null;
     if (!saved || !saved.nickname) {
       this.openOnboardingModal();
     } else {
@@ -66,7 +81,9 @@ class GameHubApp {
     const btnToggle = document.getElementById('btnLangToggle');
     if (btnToggle) {
       btnToggle.addEventListener('click', () => {
-        window.i18n.toggleLanguage();
+        if (window.i18n && window.i18n.toggleLanguage) {
+          window.i18n.toggleLanguage();
+        }
       });
     }
   }
@@ -76,12 +93,14 @@ class GameHubApp {
     const navChat = document.getElementById('navChat');
     const navPlayers = document.getElementById('navPlayers');
     const navLeaderboard = document.getElementById('navLeaderboard');
+    const navAchievements = document.getElementById('navAchievements');
 
     // Mobile Bottom Nav items
     const mobNavCatalog = document.getElementById('mobNavCatalog');
     const mobNavChat = document.getElementById('mobNavChat');
     const mobNavPlayers = document.getElementById('mobNavPlayers');
     const mobNavLeaderboard = document.getElementById('mobNavLeaderboard');
+    const mobNavAchievements = document.getElementById('mobNavAchievements');
     const mobNavAddGame = document.getElementById('mobNavAddGame');
 
     const viewCatalog = document.getElementById('viewCatalog');
@@ -95,8 +114,8 @@ class GameHubApp {
       if (target === 'catalog') {
         if (navCatalog) navCatalog.classList.add('active');
         if (mobNavCatalog) mobNavCatalog.classList.add('active');
-        viewCatalog.classList.remove('hidden');
-        viewSocial.classList.add('hidden');
+        if (viewCatalog) viewCatalog.classList.remove('hidden');
+        if (viewSocial) viewSocial.classList.add('hidden');
         if (viewLeaderboard) viewLeaderboard.classList.add('hidden');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else if (target === 'chat' || target === 'players') {
@@ -107,18 +126,20 @@ class GameHubApp {
           if (navPlayers) navPlayers.classList.add('active');
           if (mobNavPlayers) mobNavPlayers.classList.add('active');
         }
-        viewCatalog.classList.add('hidden');
-        viewSocial.classList.remove('hidden');
+        if (viewCatalog) viewCatalog.classList.add('hidden');
+        if (viewSocial) viewSocial.classList.remove('hidden');
         if (viewLeaderboard) viewLeaderboard.classList.add('hidden');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else if (target === 'leaderboard') {
         if (navLeaderboard) navLeaderboard.classList.add('active');
         if (mobNavLeaderboard) mobNavLeaderboard.classList.add('active');
-        viewCatalog.classList.add('hidden');
-        viewSocial.classList.add('hidden');
+        if (viewCatalog) viewCatalog.classList.add('hidden');
+        if (viewSocial) viewSocial.classList.add('hidden');
         if (viewLeaderboard) {
           viewLeaderboard.classList.remove('hidden');
-          window.gameHubGamification.fetchAndRenderLeaderboard(window.gameHubGamification.currentLbCategory);
+          if (window.gameHubGamification && window.gameHubGamification.fetchAndRenderLeaderboard) {
+            window.gameHubGamification.fetchAndRenderLeaderboard(window.gameHubGamification.currentLbCategory);
+          }
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -128,13 +149,30 @@ class GameHubApp {
     if (navChat) navChat.addEventListener('click', () => switchView('chat'));
     if (navPlayers) navPlayers.addEventListener('click', () => switchView('players'));
     if (navLeaderboard) navLeaderboard.addEventListener('click', () => switchView('leaderboard'));
+    if (navAchievements) navAchievements.addEventListener('click', () => {
+      if (window.gameHubGamification && window.gameHubGamification.openAchievementsModal) {
+        window.gameHubGamification.openAchievementsModal();
+      } else {
+        const modal = document.getElementById('achievementsModal');
+        if (modal) modal.classList.remove('hidden');
+      }
+    });
 
     if (mobNavCatalog) mobNavCatalog.addEventListener('click', () => switchView('catalog'));
     if (mobNavChat) mobNavChat.addEventListener('click', () => switchView('chat'));
     if (mobNavPlayers) mobNavPlayers.addEventListener('click', () => switchView('players'));
     if (mobNavLeaderboard) mobNavLeaderboard.addEventListener('click', () => switchView('leaderboard'));
+    if (mobNavAchievements) mobNavAchievements.addEventListener('click', () => {
+      if (window.gameHubGamification && window.gameHubGamification.openAchievementsModal) {
+        window.gameHubGamification.openAchievementsModal();
+      } else {
+        const modal = document.getElementById('achievementsModal');
+        if (modal) modal.classList.remove('hidden');
+      }
+    });
     if (mobNavAddGame) mobNavAddGame.addEventListener('click', () => {
-      document.getElementById('addGameModal').classList.remove('hidden');
+      const modal = document.getElementById('addGameModal');
+      if (modal) modal.classList.remove('hidden');
     });
 
     // Logo click returns to catalog
@@ -148,7 +186,8 @@ class GameHubApp {
     const btnAddGame = document.getElementById('btnAddGameHeader');
     if (btnAddGame) {
       btnAddGame.addEventListener('click', () => {
-        document.getElementById('addGameModal').classList.remove('hidden');
+        const modal = document.getElementById('addGameModal');
+        if (modal) modal.classList.remove('hidden');
       });
     }
 
@@ -160,11 +199,20 @@ class GameHubApp {
       });
     });
 
+    // Clicking modal overlay backdrop closes modal
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          overlay.classList.add('hidden');
+        }
+      });
+    });
+
     // Copy my ID button in hero
     const btnCopyMyId = document.getElementById('btnCopyMyId');
     if (btnCopyMyId) {
       btnCopyMyId.addEventListener('click', () => {
-        const myId = window.hubSocket.player ? window.hubSocket.player.id : null;
+        const myId = window.hubSocket && window.hubSocket.player ? window.hubSocket.player.id : null;
         if (myId) {
           navigator.clipboard.writeText(myId).then(() => {
             this.showSimpleToast(window.i18n.t('hero.copied_toast', { id: myId }), 'success');
@@ -207,11 +255,16 @@ class GameHubApp {
     const headerProfileBadge = document.getElementById('headerProfileBadge');
     if (headerProfileBadge) {
       headerProfileBadge.addEventListener('click', () => {
-        const p = window.hubSocket.player;
-        if (!p) return;
-        document.getElementById('editNickname').value = p.nickname;
+        const p = window.hubSocket ? window.hubSocket.player : null;
+        if (!p) {
+          this.openOnboardingModal();
+          return;
+        }
+        const editNick = document.getElementById('editNickname');
+        if (editNick) editNick.value = p.nickname;
         this.selectAvatar(p.avatar || 'avatar-cyber-samurai', 'editAvatarGrid');
-        document.getElementById('editProfileModal').classList.remove('hidden');
+        const editModal = document.getElementById('editProfileModal');
+        if (editModal) editModal.classList.remove('hidden');
       });
     }
 
@@ -457,7 +510,16 @@ class GameHubApp {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  window.app = new GameHubApp();
-  window.app.init();
-});
+function initGameHub() {
+  if (!window.app) {
+    window.app = new GameHubApp();
+    window.app.init();
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initGameHub);
+} else {
+  initGameHub();
+}
+
