@@ -71,7 +71,7 @@
     "id": "GH-97AD",
     "nickname": "NovaGamer_57",
     "avatar": "avatar-cyber-mage",
-    "xp": 1030,
+    "xp": 1053,
     "level": 6,
     "achievements": [
       "first_steps",
@@ -82,13 +82,15 @@
       "socializer"
     ],
     "scores": {
-      "phantom-alchemist": 2600
+      "phantom-alchemist": 2600,
+      "cyber-snake": 10
     },
     "gamesPlayed": [
-      "phantom-alchemist"
+      "phantom-alchemist",
+      "cyber-snake"
     ],
     "created": 1791831721848,
-    "lastSeen": 1791840416318
+    "lastSeen": 1791840926508
   },
   "GH-21FA": {
     "id": "GH-21FA",
