@@ -1,4 +1,4 @@
-// GameHub Social & Chat Manager (with i18n support & In-Game Overlay)
+// GameHub Social & Chat Manager (with i18n support, In-Game Overlay, & @Mention Direct Messaging)
 class GameHubChat {
   constructor() {
     this.activeTab = 'global';
@@ -13,6 +13,7 @@ class GameHubChat {
     this.tabsContainer = null;
     this.inputField = null;
     this.playersContainer = null;
+    this.chatMentionDropdown = null;
 
     // In-Game Overlay Chat Elements
     this.inGameDrawer = null;
@@ -23,7 +24,12 @@ class GameHubChat {
     this.inGameCloseBtn = null;
     this.inGameBadge = null;
     this.inGameToggleBtn = null;
+    this.inGameMentionDropdown = null;
     this.inGameUnreadCount = 0;
+
+    // Mention state
+    this.filteredMentionPlayers = [];
+    this.mentionHighlightedIndex = 0;
   }
 
   init() {
@@ -31,6 +37,7 @@ class GameHubChat {
     this.tabsContainer = document.getElementById('chatTabsBar');
     this.inputField = document.getElementById('chatInputField');
     this.playersContainer = document.getElementById('onlinePlayersList');
+    this.chatMentionDropdown = document.getElementById('chatMentionDropdown');
 
     this.inGameDrawer = document.getElementById('inGameChatDrawer');
     this.inGameMessagesContainer = document.getElementById('inGameChatMessages');
@@ -40,6 +47,7 @@ class GameHubChat {
     this.inGameCloseBtn = document.getElementById('btnCloseInGameChat');
     this.inGameBadge = document.getElementById('inGameChatBadge');
     this.inGameToggleBtn = document.getElementById('btnToggleInGameChat');
+    this.inGameMentionDropdown = document.getElementById('inGameMentionDropdown');
 
     this.chatHistories.set('global', []);
 
@@ -47,8 +55,11 @@ class GameHubChat {
     if (this.inputField) {
       this.inputField.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-          e.preventDefault();
-          this.sendMessage();
+          // If mention dropdown is not open, send message
+          if (this.chatMentionDropdown && this.chatMentionDropdown.classList.contains('hidden')) {
+            e.preventDefault();
+            this.sendMessage();
+          }
         }
       });
     }
@@ -75,11 +86,18 @@ class GameHubChat {
       this.inGameInputField.addEventListener('keydown', (e) => {
         stopProp(e);
         if (e.key === 'Enter') {
-          e.preventDefault();
-          this.sendInGameMessage();
+          if (this.inGameMentionDropdown && this.inGameMentionDropdown.classList.contains('hidden')) {
+            e.preventDefault();
+            this.sendInGameMessage();
+          }
         } else if (e.key === 'Escape') {
-          e.preventDefault();
-          this.closeInGameDrawer();
+          if (this.inGameMentionDropdown && !this.inGameMentionDropdown.classList.contains('hidden')) {
+            e.preventDefault();
+            this.inGameMentionDropdown.classList.add('hidden');
+          } else {
+            e.preventDefault();
+            this.closeInGameDrawer();
+          }
         }
       });
       this.inGameInputField.addEventListener('keyup', stopProp);
@@ -90,8 +108,22 @@ class GameHubChat {
       this.inGameSendBtn.addEventListener('click', () => this.sendInGameMessage());
     }
 
+    // Toggle button in HUD
+    if (this.inGameToggleBtn) {
+      this.inGameToggleBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.toggleInGameDrawer();
+      };
+    }
+
+    // Close button in drawer header
     if (this.inGameCloseBtn) {
-      this.inGameCloseBtn.addEventListener('click', () => this.closeInGameDrawer());
+      this.inGameCloseBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.closeInGameDrawer();
+      };
     }
 
     // Global Escape key to close drawer if open
@@ -100,6 +132,14 @@ class GameHubChat {
         this.closeInGameDrawer();
       }
     });
+
+    // Setup @mention autocompletion on both inputs
+    if (this.inputField && this.chatMentionDropdown) {
+      this.setupMentionAutocomplete(this.inputField, this.chatMentionDropdown);
+    }
+    if (this.inGameInputField && this.inGameMentionDropdown) {
+      this.setupMentionAutocomplete(this.inGameInputField, this.inGameMentionDropdown);
+    }
 
     // Connect to Socket events
     window.hubSocket.on('chat:global', (msg) => {
@@ -149,6 +189,162 @@ class GameHubChat {
     this.renderInGameTabs();
     this.updateInputPlaceholder();
     this.updateInGameInputPlaceholder();
+  }
+
+  // @Mention Autocomplete Implementation
+  setupMentionAutocomplete(inputEl, dropdownEl) {
+    if (!inputEl || !dropdownEl) return;
+
+    inputEl.addEventListener('input', () => {
+      const val = inputEl.value;
+      const cursorPos = inputEl.selectionStart || val.length;
+      const textBeforeCursor = val.slice(0, cursorPos);
+      const match = textBeforeCursor.match(/@([^\s]*)$/);
+
+      if (match) {
+        const query = match[1].toLowerCase();
+        const myId = window.hubSocket.player ? window.hubSocket.player.id : null;
+
+        const matchedPlayers = this.cachedPlayersList.filter(p => {
+          if (p.id === myId) return false;
+          if (!query) return true;
+          return p.nickname.toLowerCase().includes(query) || p.id.toLowerCase().includes(query);
+        });
+
+        this.filteredMentionPlayers = matchedPlayers;
+        this.mentionHighlightedIndex = 0;
+
+        if (matchedPlayers.length > 0) {
+          dropdownEl.innerHTML = `
+            <div class="chat-mention-header">
+              <span>💬 ${window.i18n ? window.i18n.t('social.mention_header') : 'Direct Message (@Player)'}</span>
+            </div>
+            <div class="chat-mention-list">
+              ${matchedPlayers.map((p, idx) => `
+                <div class="chat-mention-item ${idx === 0 ? 'active' : ''}" data-player-id="${p.id}" data-index="${idx}">
+                  <div class="mention-left">
+                    <div class="mention-avatar-small">${getAvatarSvg(p.avatar)}</div>
+                    <div class="mention-meta">
+                      <span class="mention-nick">${this.escapeHtml(p.nickname)}</span>
+                      <span class="mention-id">${p.id}</span>
+                    </div>
+                  </div>
+                  <span class="mention-action-hint">DM ↵</span>
+                </div>
+              `).join('')}
+            </div>
+          `;
+
+          dropdownEl.querySelectorAll('.chat-mention-item').forEach(item => {
+            item.addEventListener('mousedown', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const pId = item.dataset.playerId;
+              const target = this.playersMap.get(pId) || this.cachedPlayersList.find(p => p.id === pId);
+              if (target) {
+                this.selectMentionPlayer(target, inputEl, dropdownEl, match[0], match.index);
+              }
+            });
+            item.addEventListener('mouseenter', () => {
+              dropdownEl.querySelectorAll('.chat-mention-item').forEach(i => i.classList.remove('active'));
+              item.classList.add('active');
+              this.mentionHighlightedIndex = parseInt(item.dataset.index, 10);
+            });
+          });
+
+          dropdownEl.classList.remove('hidden');
+        } else {
+          dropdownEl.innerHTML = `
+            <div class="chat-mention-empty">
+              <span>${window.i18n ? window.i18n.t('social.no_players_found') : 'No players found'}</span>
+            </div>
+          `;
+          dropdownEl.classList.remove('hidden');
+        }
+      } else {
+        dropdownEl.classList.add('hidden');
+      }
+    });
+
+    inputEl.addEventListener('keydown', (e) => {
+      if (!dropdownEl.classList.contains('hidden')) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          e.stopPropagation();
+          this.navigateMention(dropdownEl, 1);
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          e.stopPropagation();
+          this.navigateMention(dropdownEl, -1);
+          return;
+        }
+        if (e.key === 'Enter' || e.key === 'Tab') {
+          if (this.filteredMentionPlayers && this.filteredMentionPlayers[this.mentionHighlightedIndex]) {
+            e.preventDefault();
+            e.stopPropagation();
+            const val = inputEl.value;
+            const cursorPos = inputEl.selectionStart || val.length;
+            const match = val.slice(0, cursorPos).match(/@([^\s]*)$/);
+            this.selectMentionPlayer(
+              this.filteredMentionPlayers[this.mentionHighlightedIndex],
+              inputEl,
+              dropdownEl,
+              match ? match[0] : null,
+              match ? match.index : null
+            );
+            return;
+          }
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          dropdownEl.classList.add('hidden');
+          return;
+        }
+      }
+    });
+
+    inputEl.addEventListener('blur', () => {
+      setTimeout(() => {
+        dropdownEl.classList.add('hidden');
+      }, 220);
+    });
+  }
+
+  navigateMention(dropdownEl, delta) {
+    const items = dropdownEl.querySelectorAll('.chat-mention-item');
+    if (items.length === 0) return;
+    items.forEach(i => i.classList.remove('active'));
+    this.mentionHighlightedIndex = (this.mentionHighlightedIndex + delta + items.length) % items.length;
+    const activeItem = items[this.mentionHighlightedIndex];
+    if (activeItem) {
+      activeItem.classList.add('active');
+      activeItem.scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  selectMentionPlayer(player, inputEl, dropdownEl, matchStr, matchIdx) {
+    dropdownEl.classList.add('hidden');
+    
+    // Switch to direct private chat tab with this player!
+    this.openDirectChat(player.id, player.nickname);
+
+    // Clean up the @query from input
+    const val = inputEl.value;
+    if (typeof matchIdx === 'number' && matchStr) {
+      const before = val.slice(0, matchIdx);
+      const after = val.slice(matchIdx + matchStr.length);
+      inputEl.value = (before + after).trim();
+    } else {
+      inputEl.value = '';
+    }
+
+    // Focus input for immediate direct messaging
+    setTimeout(() => {
+      inputEl.focus();
+    }, 60);
   }
 
   ensureTab(playerId, nickname = null) {
@@ -434,10 +630,20 @@ class GameHubChat {
 
   // In-Game Drawer Controls
   isInGameDrawerOpen() {
-    return this.inGameDrawer && this.inGameDrawer.classList.contains('open');
+    if (!this.inGameDrawer) {
+      this.inGameDrawer = document.getElementById('inGameChatDrawer');
+    }
+    return this.inGameDrawer ? this.inGameDrawer.classList.contains('open') : false;
   }
 
   toggleInGameDrawer(forceState) {
+    if (!this.inGameDrawer) {
+      this.inGameDrawer = document.getElementById('inGameChatDrawer');
+    }
+    if (!this.inGameToggleBtn) {
+      this.inGameToggleBtn = document.getElementById('btnToggleInGameChat');
+    }
+
     const shouldOpen = typeof forceState === 'boolean' ? forceState : !this.isInGameDrawerOpen();
     if (shouldOpen) {
       this.openInGameDrawer();
@@ -447,7 +653,14 @@ class GameHubChat {
   }
 
   openInGameDrawer() {
+    if (!this.inGameDrawer) {
+      this.inGameDrawer = document.getElementById('inGameChatDrawer');
+    }
+    if (!this.inGameToggleBtn) {
+      this.inGameToggleBtn = document.getElementById('btnToggleInGameChat');
+    }
     if (!this.inGameDrawer) return;
+
     this.inGameDrawer.classList.add('open');
     if (this.inGameToggleBtn) {
       this.inGameToggleBtn.classList.add('active-btn');
@@ -464,10 +677,20 @@ class GameHubChat {
   }
 
   closeInGameDrawer() {
+    if (!this.inGameDrawer) {
+      this.inGameDrawer = document.getElementById('inGameChatDrawer');
+    }
+    if (!this.inGameToggleBtn) {
+      this.inGameToggleBtn = document.getElementById('btnToggleInGameChat');
+    }
     if (!this.inGameDrawer) return;
+
     this.inGameDrawer.classList.remove('open');
     if (this.inGameToggleBtn) {
       this.inGameToggleBtn.classList.remove('active-btn');
+    }
+    if (this.inGameMentionDropdown) {
+      this.inGameMentionDropdown.classList.add('hidden');
     }
     const iframe = document.getElementById('gameIframe');
     if (iframe && iframe.contentWindow) {
@@ -478,6 +701,9 @@ class GameHubChat {
   }
 
   updateInGameUnreadBadge() {
+    if (!this.inGameBadge) {
+      this.inGameBadge = document.getElementById('inGameChatBadge');
+    }
     if (!this.inGameBadge) return;
     if (this.inGameUnreadCount > 0) {
       this.inGameBadge.textContent = this.inGameUnreadCount > 9 ? '9+' : this.inGameUnreadCount;
@@ -539,7 +765,7 @@ class GameHubChat {
             <span class="status-dot ${statusClass}"></span>
           </div>
           <div class="player-meta">
-            <span class="player-nick">${p.nickname} ${isSelf ? window.i18n.t('social.you') : ''}</span>
+            <span class="player-nick">${this.escapeHtml(p.nickname)} ${isSelf ? window.i18n.t('social.you') : ''}</span>
             <span class="player-id-sub">${p.id}</span>
             <span class="player-status-activity">${statusDesc}</span>
           </div>
@@ -563,6 +789,7 @@ class GameHubChat {
   }
 
   escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.innerText = text;
     return div.innerHTML;

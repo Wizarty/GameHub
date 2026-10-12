@@ -64,6 +64,8 @@ const TRANSLATIONS = {
     "social.invite_in_chat": "🎮 Game Invitation: {game}",
     "social.accept_and_play": "Accept & Play",
     "social.invite_sent_tag": "Invitation sent",
+    "social.mention_header": "Select player for Direct Message:",
+    "social.no_players_found": "No players found",
 
     // Leaderboard Section
     "leaderboard.title": "Cyber Hall of Fame",
@@ -241,6 +243,8 @@ const TRANSLATIONS = {
     "social.invite_in_chat": "🎮 Приглашение в игру: {game}",
     "social.accept_and_play": "Принять и играть",
     "social.invite_sent_tag": "Приглашение отправлено",
+    "social.mention_header": "Выберите игрока для личных сообщений:",
+    "social.no_players_found": "Игроки не найдены",
 
     // Leaderboard Section
     "leaderboard.title": "Зал Кибер-Славы",

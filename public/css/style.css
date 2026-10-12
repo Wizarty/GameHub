@@ -1062,6 +1062,7 @@ main {
 
 /* In-game Input Bar */
 .ingame-chat-input-bar {
+  position: relative;
   padding: 10px 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(0, 0, 0, 0.4);
@@ -1503,12 +1504,143 @@ main {
 
 /* Chat Input Bar */
 .chat-input-bar {
+  position: relative;
   padding: 12px 16px;
   border-top: 1px solid var(--border-color);
   background: rgba(0, 0, 0, 0.25);
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+/* Mention Autocomplete Dropdown (@Player) */
+.chat-mention-dropdown {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 10px;
+  right: 10px;
+  background: rgba(11, 16, 30, 0.97);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: var(--radius-md);
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.8), 0 0 16px rgba(0, 240, 255, 0.2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  max-height: 230px;
+  overflow-y: auto;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.15s ease;
+}
+
+.chat-mention-dropdown.hidden {
+  display: none !important;
+}
+
+.chat-mention-header {
+  padding: 8px 12px;
+  background: rgba(0, 240, 255, 0.08);
+  border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--neon-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.chat-mention-list {
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  gap: 2px;
+}
+
+.chat-mention-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.chat-mention-item:hover,
+.chat-mention-item.active {
+  background: rgba(0, 240, 255, 0.15);
+  border-left: 3px solid var(--neon-cyan);
+  padding-left: 9px;
+}
+
+.mention-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mention-avatar-small {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #111;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.mention-avatar-small svg {
+  width: 100%;
+  height: 100%;
+}
+
+.mention-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mention-nick {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mention-id {
+  font-size: 0.7rem;
+  font-family: monospace;
+  color: var(--neon-cyan);
+}
+
+.mention-action-hint {
+  font-size: 0.72rem;
+  font-family: monospace;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.chat-mention-item.active .mention-action-hint {
+  color: #070913;
+  background: var(--neon-cyan);
+  font-weight: bold;
+}
+
+.chat-mention-empty {
+  padding: 12px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #94a3b8;
 }
 
 .chat-input-field {
