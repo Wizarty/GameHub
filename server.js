@@ -348,6 +348,62 @@ app.get('/api/leaderboard', (req, res) => {
   res.json({ success: true, category, count: result.length, leaderboard: result });
 });
 
+// REST Login / Register Endpoint (Essential for Vercel serverless mode & offline fallbacks)
+app.post('/api/player/login', (req, res) => {
+  let { nickname, avatar, existingId } = req.body || {};
+  nickname = (nickname || 'CyberPlayer').trim().substring(0, 24);
+  avatar = avatar || 'avatar-cyber-samurai';
+
+  let id = existingId;
+  if (!id || typeof id !== 'string' || !id.startsWith('GH-')) {
+    id = generatePlayerId();
+  }
+
+  const player = getOrCreatePlayerProfile(id, nickname, avatar);
+  const levelInfo = getLevelInfo(player.xp || 0);
+
+  res.json({
+    success: true,
+    player: {
+      id: player.id,
+      nickname: player.nickname,
+      avatar: player.avatar,
+      xp: player.xp || 0,
+      level: levelInfo.level,
+      levelInfo,
+      achievements: player.achievements || [],
+      scores: player.scores || {}
+    },
+    recentChat: globalChatHistory.slice(-25)
+  });
+});
+
+// REST Profile Update Endpoint
+app.post('/api/player/profile', (req, res) => {
+  let { id, nickname, avatar } = req.body || {};
+  if (!id) return res.status(400).json({ success: false, error: 'Missing player ID' });
+
+  nickname = (nickname || 'CyberPlayer').trim().substring(0, 24);
+  avatar = avatar || 'avatar-cyber-samurai';
+
+  const player = getOrCreatePlayerProfile(id, nickname, avatar);
+  const levelInfo = getLevelInfo(player.xp || 0);
+
+  res.json({
+    success: true,
+    player: {
+      id: player.id,
+      nickname: player.nickname,
+      avatar: player.avatar,
+      xp: player.xp || 0,
+      level: levelInfo.level,
+      levelInfo,
+      achievements: player.achievements || [],
+      scores: player.scores || {}
+    }
+  });
+});
+
 // Submit Game Score & Activity
 app.post('/api/player/score', (req, res) => {
   const { playerId, gameId, score, metadata } = req.body;
