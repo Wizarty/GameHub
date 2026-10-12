@@ -39,8 +39,9 @@ const TRANSLATIONS = {
     "game.invite_by_id": "Invite by ID",
     "game.ingame_chat": "In-Game Chat",
     "game.fullscreen": "Fullscreen",
-    "game.drawer_title": "In-Game Chat Overlay",
+    "game.drawer_title": "In-Game Chat",
     "game.drawer_desc": "Chat with friends and accept game invites without closing your current game!",
+    "game.close_chat": "Close Chat",
     "game.open_full_chat": "Open Full Chat",
 
     // Social & Chat
@@ -213,10 +214,11 @@ const TRANSLATIONS = {
     // In-Game HUD & Viewport
     "game.back_to_hub": "В хаб",
     "game.invite_by_id": "Пригласить по ID",
-    "game.ingame_chat": "Чат поверх игры",
+    "game.ingame_chat": "Чат в игре",
     "game.fullscreen": "На весь экран",
-    "game.drawer_title": "Чат во время игры",
+    "game.drawer_title": "Чат в игре",
     "game.drawer_desc": "Общайтесь в лаундже и принимайте приглашения, не закрывая игровой процесс!",
+    "game.close_chat": "Закрыть чат",
     "game.open_full_chat": "Перейти в полный чат",
 
     // Social & Chat

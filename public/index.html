@@ -250,15 +250,16 @@
       <div class="game-viewport-controls">
         <button class="hud-btn" id="btnInGameInvite">
           <span>🎮</span>
-          <span data-i18n="game.invite_by_id">Invite by ID</span>
+          <span class="hud-btn-label" data-i18n="game.invite_by_id">Invite by ID</span>
         </button>
-        <button class="hud-btn" id="btnToggleInGameChat">
+        <button class="hud-btn" id="btnToggleInGameChat" title="In-Game Chat">
           <span>💬</span>
-          <span data-i18n="game.ingame_chat">In-Game Chat</span>
+          <span class="hud-btn-label" data-i18n="game.ingame_chat">In-Game Chat</span>
+          <span class="hud-unread-badge hidden" id="inGameChatBadge">0</span>
         </button>
         <button class="hud-btn" id="btnGameFullscreen">
           <span>⛶</span>
-          <span data-i18n="game.fullscreen">Fullscreen</span>
+          <span class="hud-btn-label" data-i18n="game.fullscreen">Fullscreen</span>
         </button>
       </div>
     </div>
@@ -268,13 +269,30 @@
 
       <!-- In-game chat drawer -->
       <div class="ingame-chat-drawer" id="inGameChatDrawer">
-        <div style="padding: 16px; border-bottom: 1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
-          <h4 style="color:#fff;" data-i18n="game.drawer_title">In-Game Chat Overlay</h4>
-          <span style="cursor:pointer; color:#94a3b8;" onclick="document.getElementById('inGameChatDrawer').classList.remove('open')">✕</span>
+        <div class="ingame-chat-header">
+          <div class="ingame-chat-header-left">
+            <span class="ingame-chat-status-dot"></span>
+            <h4 class="ingame-chat-title" data-i18n="game.drawer_title">In-Game Chat</h4>
+          </div>
+          <div class="ingame-chat-header-actions">
+            <button class="ingame-chat-close-btn" id="btnCloseInGameChat" title="Close" aria-label="Close" data-i18n-title="game.close_chat">✕</button>
+          </div>
         </div>
-        <div style="flex:1; padding:16px; display:flex; flex-direction:column; justify-content:center; align-items:center; color:#94a3b8; text-align:center;">
-          <p data-i18n="game.drawer_desc">Chat with friends and accept game invites without closing your current game!</p>
-          <button class="btn-secondary" style="margin-top:14px;" onclick="document.getElementById('navChat').click(); document.getElementById('btnExitGame').click();" data-i18n="game.open_full_chat">Open Full Chat</button>
+
+        <!-- In-game Chat Tabs (Global + DMs) -->
+        <div class="ingame-chat-tabs-bar" id="inGameChatTabs">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- In-game Messages Stream -->
+        <div class="ingame-chat-messages" id="inGameChatMessages">
+          <!-- Messages rendered dynamically -->
+        </div>
+
+        <!-- In-game Input Bar -->
+        <div class="ingame-chat-input-bar">
+          <input type="text" id="inGameChatInput" class="ingame-chat-input" placeholder="Message in Global Lounge..." data-i18n-placeholder="social.input_placeholder_global" autocomplete="off">
+          <button class="ingame-chat-send-btn" id="btnSendInGameChat" title="Send" data-i18n-title="social.send_tooltip">➤</button>
         </div>
       </div>
     </div>

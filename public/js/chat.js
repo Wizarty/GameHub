@@ -1,4 +1,4 @@
-// GameHub Social & Chat Manager (with i18n support)
+// GameHub Social & Chat Manager (with i18n support & In-Game Overlay)
 class GameHubChat {
   constructor() {
     this.activeTab = 'global';
@@ -8,10 +8,22 @@ class GameHubChat {
     this.playersMap = new Map();
     this.cachedPlayersList = [];
 
+    // Main Chat Elements
     this.chatContainer = null;
     this.tabsContainer = null;
     this.inputField = null;
     this.playersContainer = null;
+
+    // In-Game Overlay Chat Elements
+    this.inGameDrawer = null;
+    this.inGameMessagesContainer = null;
+    this.inGameTabsContainer = null;
+    this.inGameInputField = null;
+    this.inGameSendBtn = null;
+    this.inGameCloseBtn = null;
+    this.inGameBadge = null;
+    this.inGameToggleBtn = null;
+    this.inGameUnreadCount = 0;
   }
 
   init() {
@@ -20,9 +32,18 @@ class GameHubChat {
     this.inputField = document.getElementById('chatInputField');
     this.playersContainer = document.getElementById('onlinePlayersList');
 
+    this.inGameDrawer = document.getElementById('inGameChatDrawer');
+    this.inGameMessagesContainer = document.getElementById('inGameChatMessages');
+    this.inGameTabsContainer = document.getElementById('inGameChatTabs');
+    this.inGameInputField = document.getElementById('inGameChatInput');
+    this.inGameSendBtn = document.getElementById('btnSendInGameChat');
+    this.inGameCloseBtn = document.getElementById('btnCloseInGameChat');
+    this.inGameBadge = document.getElementById('inGameChatBadge');
+    this.inGameToggleBtn = document.getElementById('btnToggleInGameChat');
+
     this.chatHistories.set('global', []);
 
-    // Setup input listeners
+    // Setup main chat input listeners
     if (this.inputField) {
       this.inputField.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -47,6 +68,38 @@ class GameHubChat {
         }
       });
     }
+
+    // Setup in-game overlay input listeners
+    if (this.inGameInputField) {
+      const stopProp = (e) => e.stopPropagation();
+      this.inGameInputField.addEventListener('keydown', (e) => {
+        stopProp(e);
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.sendInGameMessage();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          this.closeInGameDrawer();
+        }
+      });
+      this.inGameInputField.addEventListener('keyup', stopProp);
+      this.inGameInputField.addEventListener('keypress', stopProp);
+    }
+
+    if (this.inGameSendBtn) {
+      this.inGameSendBtn.addEventListener('click', () => this.sendInGameMessage());
+    }
+
+    if (this.inGameCloseBtn) {
+      this.inGameCloseBtn.addEventListener('click', () => this.closeInGameDrawer());
+    }
+
+    // Global Escape key to close drawer if open
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.isInGameDrawerOpen()) {
+        this.closeInGameDrawer();
+      }
+    });
 
     // Connect to Socket events
     window.hubSocket.on('chat:global', (msg) => {
@@ -75,6 +128,7 @@ class GameHubChat {
         this.chatHistories.set('global', recentChat);
         if (this.activeTab === 'global') {
           this.renderMessages();
+          this.renderInGameMessages();
         }
       }
     });
@@ -82,14 +136,19 @@ class GameHubChat {
     window.addEventListener('languageChanged', () => {
       this.renderTabs();
       this.renderMessages();
+      this.renderInGameTabs();
+      this.renderInGameMessages();
       if (this.cachedPlayersList.length > 0) {
         this.updateOnlinePlayers(this.cachedPlayersList);
       }
       this.updateInputPlaceholder();
+      this.updateInGameInputPlaceholder();
     });
 
     this.renderTabs();
+    this.renderInGameTabs();
     this.updateInputPlaceholder();
+    this.updateInGameInputPlaceholder();
   }
 
   ensureTab(playerId, nickname = null) {
@@ -99,6 +158,7 @@ class GameHubChat {
         this.chatHistories.set(playerId, []);
       }
       this.renderTabs();
+      this.renderInGameTabs();
     }
   }
 
@@ -112,7 +172,10 @@ class GameHubChat {
     this.unreadCounts.set(tabId, 0);
     this.renderTabs();
     this.renderMessages();
+    this.renderInGameTabs();
+    this.renderInGameMessages();
     this.updateInputPlaceholder();
+    this.updateInGameInputPlaceholder();
   }
 
   updateInputPlaceholder() {
@@ -121,6 +184,13 @@ class GameHubChat {
       ? window.i18n.t('social.input_placeholder_global')
       : window.i18n.t('social.input_placeholder_dm', { id: this.activeTab });
     this.inputField.focus();
+  }
+
+  updateInGameInputPlaceholder() {
+    if (!this.inGameInputField) return;
+    this.inGameInputField.placeholder = this.activeTab === 'global' 
+      ? window.i18n.t('social.input_placeholder_global')
+      : window.i18n.t('social.input_placeholder_dm', { id: this.activeTab });
   }
 
   closeTab(tabId, event) {
@@ -132,6 +202,7 @@ class GameHubChat {
       this.switchTab('global');
     } else {
       this.renderTabs();
+      this.renderInGameTabs();
     }
   }
 
@@ -170,6 +241,41 @@ class GameHubChat {
     });
   }
 
+  renderInGameTabs() {
+    if (!this.inGameTabsContainer) return;
+    this.inGameTabsContainer.innerHTML = '';
+
+    this.openTabs.forEach(tabId => {
+      const btn = document.createElement('button');
+      btn.className = `ingame-chat-tab-btn ${this.activeTab === tabId ? 'active' : ''}`;
+
+      let title = tabId === 'global' ? window.i18n.t('social.global_tab') : `👤 ${tabId}`;
+      const unread = this.unreadCounts.get(tabId) || 0;
+
+      let unreadBadge = '';
+      if (unread > 0) {
+        unreadBadge = `<span class="badge-counter">${unread}</span>`;
+      }
+
+      let closeBtn = '';
+      if (tabId !== 'global') {
+        closeBtn = `<span class="chat-tab-close" title="Close">✕</span>`;
+      }
+
+      btn.innerHTML = `<span>${title}</span> ${unreadBadge} ${closeBtn}`;
+
+      btn.addEventListener('click', (e) => {
+        if (e.target.classList.contains('chat-tab-close')) {
+          this.closeTab(tabId, e);
+        } else {
+          this.switchTab(tabId);
+        }
+      });
+
+      this.inGameTabsContainer.appendChild(btn);
+    });
+  }
+
   addMessageToHistory(tabId, msg) {
     if (!this.chatHistories.has(tabId)) {
       this.chatHistories.set(tabId, []);
@@ -177,12 +283,24 @@ class GameHubChat {
     this.chatHistories.get(tabId).push(msg);
 
     if (this.activeTab === tabId) {
-      this.appendSingleMessage(msg);
-      this.scrollToBottom();
+      this.appendSingleMessage(msg, this.chatContainer);
+      this.scrollToBottom(this.chatContainer);
+
+      this.appendSingleMessage(msg, this.inGameMessagesContainer);
+      this.scrollToBottom(this.inGameMessagesContainer);
     } else {
       const currentUnread = this.unreadCounts.get(tabId) || 0;
       this.unreadCounts.set(tabId, currentUnread + 1);
       this.renderTabs();
+      this.renderInGameTabs();
+    }
+
+    // In-game unread counter if game is active and drawer is closed
+    const viewport = document.getElementById('gameViewportWrapper');
+    const isGameActive = viewport && !viewport.classList.contains('hidden');
+    if (isGameActive && !this.isInGameDrawerOpen()) {
+      this.inGameUnreadCount++;
+      this.updateInGameUnreadBadge();
     }
   }
 
@@ -199,19 +317,37 @@ class GameHubChat {
         : window.i18n.t('social.dm_intro', { id: this.activeTab });
       this.chatContainer.appendChild(emptyNote);
     } else {
-      history.forEach(msg => this.appendSingleMessage(msg));
+      history.forEach(msg => this.appendSingleMessage(msg, this.chatContainer));
     }
-    this.scrollToBottom();
+    this.scrollToBottom(this.chatContainer);
   }
 
-  appendSingleMessage(msg) {
-    if (!this.chatContainer) return;
+  renderInGameMessages() {
+    if (!this.inGameMessagesContainer) return;
+    this.inGameMessagesContainer.innerHTML = '';
+
+    const history = this.chatHistories.get(this.activeTab) || [];
+    if (history.length === 0) {
+      const emptyNote = document.createElement('div');
+      emptyNote.className = 'chat-system-message';
+      emptyNote.innerText = this.activeTab === 'global' 
+        ? window.i18n.t('social.welcome_global') 
+        : window.i18n.t('social.dm_intro', { id: this.activeTab });
+      this.inGameMessagesContainer.appendChild(emptyNote);
+    } else {
+      history.forEach(msg => this.appendSingleMessage(msg, this.inGameMessagesContainer));
+    }
+    this.scrollToBottom(this.inGameMessagesContainer);
+  }
+
+  appendSingleMessage(msg, targetContainer = this.chatContainer) {
+    if (!targetContainer) return;
 
     if (msg.type === 'system') {
       const sysDiv = document.createElement('div');
       sysDiv.className = 'chat-system-message';
       sysDiv.innerText = msg.text;
-      this.chatContainer.appendChild(sysDiv);
+      targetContainer.appendChild(sysDiv);
       return;
     }
 
@@ -263,7 +399,7 @@ class GameHubChat {
       </div>
     `;
 
-    this.chatContainer.appendChild(bubble);
+    targetContainer.appendChild(bubble);
   }
 
   sendMessage() {
@@ -281,9 +417,84 @@ class GameHubChat {
     this.inputField.focus();
   }
 
-  scrollToBottom() {
-    if (this.chatContainer) {
-      this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
+  sendInGameMessage() {
+    if (!this.inGameInputField) return;
+    const text = this.inGameInputField.value.trim();
+    if (!text) return;
+
+    if (this.activeTab === 'global') {
+      window.hubSocket.sendGlobalMessage(text);
+    } else {
+      window.hubSocket.sendPrivateMessage(this.activeTab, text);
+    }
+
+    this.inGameInputField.value = '';
+    this.inGameInputField.focus();
+  }
+
+  // In-Game Drawer Controls
+  isInGameDrawerOpen() {
+    return this.inGameDrawer && this.inGameDrawer.classList.contains('open');
+  }
+
+  toggleInGameDrawer(forceState) {
+    const shouldOpen = typeof forceState === 'boolean' ? forceState : !this.isInGameDrawerOpen();
+    if (shouldOpen) {
+      this.openInGameDrawer();
+    } else {
+      this.closeInGameDrawer();
+    }
+  }
+
+  openInGameDrawer() {
+    if (!this.inGameDrawer) return;
+    this.inGameDrawer.classList.add('open');
+    if (this.inGameToggleBtn) {
+      this.inGameToggleBtn.classList.add('active-btn');
+    }
+    this.resetInGameUnreadBadge();
+    this.renderInGameTabs();
+    this.renderInGameMessages();
+    this.updateInGameInputPlaceholder();
+    setTimeout(() => {
+      if (this.inGameInputField) {
+        this.inGameInputField.focus();
+      }
+    }, 120);
+  }
+
+  closeInGameDrawer() {
+    if (!this.inGameDrawer) return;
+    this.inGameDrawer.classList.remove('open');
+    if (this.inGameToggleBtn) {
+      this.inGameToggleBtn.classList.remove('active-btn');
+    }
+    const iframe = document.getElementById('gameIframe');
+    if (iframe && iframe.contentWindow) {
+      try {
+        iframe.contentWindow.focus();
+      } catch (e) {}
+    }
+  }
+
+  updateInGameUnreadBadge() {
+    if (!this.inGameBadge) return;
+    if (this.inGameUnreadCount > 0) {
+      this.inGameBadge.textContent = this.inGameUnreadCount > 9 ? '9+' : this.inGameUnreadCount;
+      this.inGameBadge.classList.remove('hidden');
+    } else {
+      this.inGameBadge.classList.add('hidden');
+    }
+  }
+
+  resetInGameUnreadBadge() {
+    this.inGameUnreadCount = 0;
+    this.updateInGameUnreadBadge();
+  }
+
+  scrollToBottom(container = this.chatContainer) {
+    if (container) {
+      container.scrollTop = container.scrollHeight;
     }
   }
 

@@ -276,14 +276,6 @@ class GameHubCatalog {
       });
     }
 
-    const btnInGameChat = document.getElementById('btnToggleInGameChat');
-    const drawer = document.getElementById('inGameChatDrawer');
-    if (btnInGameChat && drawer) {
-      btnInGameChat.addEventListener('click', () => {
-        drawer.classList.toggle('open');
-        btnInGameChat.classList.toggle('active-btn');
-      });
-    }
 
     const btnInGameInvite = document.getElementById('btnInGameInvite');
     if (btnInGameInvite) {
@@ -466,8 +458,13 @@ class GameHubCatalog {
     this.activeGame = null;
 
     // Close in-game drawer if open
-    document.getElementById('inGameChatDrawer').classList.remove('open');
-    document.getElementById('btnToggleInGameChat').classList.remove('active-btn');
+    if (window.gameHubChat) {
+      window.gameHubChat.closeInGameDrawer();
+      window.gameHubChat.resetInGameUnreadBadge();
+    } else {
+      document.getElementById('inGameChatDrawer')?.classList.remove('open');
+      document.getElementById('btnToggleInGameChat')?.classList.remove('active-btn');
+    }
 
     // Restore status to online
     window.hubSocket.updateStatus('online');
