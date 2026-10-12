@@ -37,11 +37,68 @@ body {
   background-attachment: fixed;
   color: var(--text-main);
   font-family: var(--font-sans);
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+}
+
+/* Typography & Layout Best Practices (modern-web-guidance) */
+h1, h2, h3, h4, h5, h6,
+.hero-content h1,
+.lb-header-banner h2,
+.logo-text,
+.game-title,
+.modal-title,
+.podium-name,
+.sidebar-card-title {
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  letter-spacing: -0.01em;
+}
+
+p,
+.hero-content p,
+.game-desc,
+.lb-header-banner p,
+.ach-desc,
+.empty-state p {
+  text-wrap: pretty;
+  overflow-wrap: break-word;
+  line-height: 1.5;
+}
+
+/* Numeric & Monospace Tokens: avoid orphan fragments in hashes/IDs */
+.user-id,
+.user-id-tag,
+.lb-id,
+.hero-my-id,
+.player-id-tag,
+.hero-id-tag,
+.hud-score,
+.podium-id,
+.hero-xp-text,
+.lb-score-val {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: normal;
+}
+
+/* Safe Ellipsis Truncation for Player Names & Long Titles */
+.user-name,
+.lb-nick,
+.player-nick,
+.toast-from-name,
+.game-current-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 /* Scrollbar */
@@ -123,25 +180,27 @@ header {
 .nav-tabs {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: clamp(2px, 0.4vw, 6px);
   background: rgba(0, 0, 0, 0.35);
-  padding: 5px;
+  padding: 4px;
   border-radius: var(--radius-full);
   border: 1px solid var(--border-color);
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .nav-btn {
   background: transparent;
   border: none;
   color: var(--text-muted);
-  padding: 8px 18px;
+  padding: clamp(6px, 0.7vw, 8px) clamp(8px, 1.1vw, 16px);
   border-radius: var(--radius-full);
-  font-size: 0.92rem;
+  font-size: clamp(0.82rem, 0.88vw, 0.92rem);
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: clamp(4px, 0.5vw, 8px);
   transition: all 0.2s;
   white-space: nowrap;
 }
@@ -173,7 +232,9 @@ header {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: clamp(6px, 0.9vw, 12px);
+  min-width: 0;
+  flex-shrink: 0;
 }
 
 /* Language Toggle Button */
@@ -376,8 +437,8 @@ header {
 /* Main Content Container */
 main {
   flex: 1;
-  padding: clamp(16px, 3vw, 32px);
-  max-width: 1560px;
+  padding: clamp(16px, 2.5vw, 36px);
+  max-width: min(1840px, 94vw);
   margin: 0 auto;
   width: 100%;
 }
@@ -387,7 +448,7 @@ main {
   background: linear-gradient(135deg, rgba(22, 27, 46, 0.9), rgba(11, 14, 25, 0.9));
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: clamp(20px, 4vw, 36px);
+  padding: clamp(20px, 3.5vw, 36px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -420,8 +481,8 @@ main {
 
 .hero-content p {
   color: var(--text-muted);
-  font-size: clamp(0.92rem, 1.5vw, 1.05rem);
-  max-width: 680px;
+  font-size: clamp(0.92rem, 1.4vw, 1.05rem);
+  max-width: 720px;
   line-height: 1.5;
 }
 
@@ -491,9 +552,12 @@ main {
 .filter-pills {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
   overflow-x: auto;
-  padding-bottom: 4px;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+  max-width: 100%;
 }
 
 .pill-btn {
@@ -507,6 +571,7 @@ main {
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .pill-btn:hover {
@@ -545,8 +610,8 @@ main {
 /* Games Grid */
 .games-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
-  gap: clamp(16px, 2.5vw, 26px);
+  grid-template-columns: repeat(auto-fill, minmax(clamp(280px, 20vw, 360px), 1fr));
+  gap: clamp(16px, 2vw, 26px);
 }
 
 .game-card {
@@ -1542,40 +1607,91 @@ main {
 }
 
 /* =========================================================
-   RESPONSIVE DESIGN BREAKPOINTS: Mobile, Tablets, Desktops, 4K
+   RESPONSIVE DESIGN BREAKPOINTS: Multi-Monitor, Ultrawide, 4K,
+   1440p, 1080p Laptops (125%-150% scaling), Tablets & Mobile
    ========================================================= */
 
-/* 1. Ultra-wide & 4K Monitors (> 1600px) */
-@media (min-width: 1600px) {
+/* 1. Ultra-wide (21:9) & 4K UHD Monitors (>= 1920px, >= 2560px) */
+@media (min-width: 1920px) {
   main {
-    max-width: 1720px;
+    max-width: min(2000px, 94vw);
+    padding: clamp(24px, 2.5vw, 44px);
   }
   .games-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    gap: 28px;
+  }
+  .hero-banner {
+    padding: 36px 44px;
+  }
+  .hero-content h1 {
+    font-size: 2.6rem;
+  }
+  .social-view-container {
+    grid-template-columns: 360px 1fr;
+    height: 72vh;
+    min-height: 600px;
   }
 }
 
-/* 2. Tablets & Small Laptops (769px - 1080px) */
-@media (max-width: 1080px) {
+@media (min-width: 2560px) {
+  main {
+    max-width: min(2400px, 92vw);
+  }
+  .games-grid {
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 32px;
+  }
+}
+
+/* 2. Standard Laptops with OS scaling (1024px - 1366px, DPI 125%/150%) */
+@media (max-width: 1280px) and (min-width: 769px) {
+  header {
+    padding: 0 16px;
+    gap: 10px;
+  }
+  .nav-btn {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    gap: 6px;
+  }
   .search-id-input {
-    width: 150px;
+    width: 130px;
+    font-size: 0.84rem;
   }
   .search-id-input:focus {
-    width: 180px;
+    width: 170px;
+  }
+  .btn-add-game {
+    padding: 7px 12px;
+    font-size: 0.82rem;
+  }
+  .user-name {
+    max-width: 90px;
+  }
+}
+
+/* 3. Small Laptops & Tablets in Landscape (769px - 1050px) */
+@media (max-width: 1050px) and (min-width: 769px) {
+  .search-id-box {
+    display: none; /* Frees up header space for Russian navigation tabs & profile */
   }
   .social-view-container {
     grid-template-columns: 260px 1fr;
   }
+  .hero-banner {
+    padding: 24px 28px;
+  }
 }
 
-/* 3. Mobile Phones & Tablets in Portrait (<= 768px) */
+/* 4. Tablets & iPad Portrait / Mobile Phones (<= 768px) */
 @media (max-width: 768px) {
   :root {
     --header-height: 60px;
   }
 
   body {
-    padding-bottom: calc(var(--bottom-nav-height) + 10px);
+    padding-bottom: calc(var(--bottom-nav-height) + 12px);
   }
 
   header {
@@ -1596,9 +1712,10 @@ main {
   /* Hero Banner stacks on mobile */
   .hero-banner {
     flex-direction: column;
-    align-items: flex-start;
-    padding: 20px;
+    align-items: stretch;
+    padding: 20px 16px;
     margin-bottom: 20px;
+    gap: 16px;
   }
 
   .hero-actions {
@@ -1613,10 +1730,12 @@ main {
   .catalog-toolbar {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
   }
 
   .catalog-search-box {
     max-width: 100%;
+    width: 100%;
   }
 
   .filter-pills {
@@ -1624,14 +1743,16 @@ main {
     overflow-x: auto;
     flex-wrap: nowrap;
     -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
   }
 
   /* Games Grid on mobile: single clean column */
   .games-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 
-  /* Social View on mobile: full screen stacked or switchable */
+  /* Social View on mobile: full screen stacked */
   .social-view-container {
     grid-template-columns: 1fr;
     height: auto;
@@ -1639,11 +1760,11 @@ main {
   }
 
   .sidebar-players-card {
-    max-height: 200px;
+    max-height: 220px;
   }
 
   .chat-main-card {
-    min-height: 400px;
+    min-height: 420px;
   }
 
   /* Modals on mobile: full width */
@@ -1659,26 +1780,67 @@ main {
   /* In-game viewport controls compact on mobile */
   .game-viewport-hud {
     padding: 0 10px;
+    gap: 8px;
   }
   .hud-btn span:last-child {
     display: none; /* Show only icon on small mobile screens */
   }
   .hud-btn {
-    padding: 6px 8px;
+    padding: 6px 10px;
+    min-height: 38px;
+  }
+  
+  /* Leaderboard Podium on tablets/mobile */
+  .podium-container {
+    gap: 8px;
+    padding: 10px 0;
+  }
+  .podium-card {
+    width: clamp(100px, 30vw, 140px);
+    padding: 12px 8px;
+  }
+  .podium-avatar {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  .podium-name {
+    font-size: 0.88rem;
+  }
+  .podium-score {
+    font-size: 1rem;
   }
 }
 
-/* 4. Very Small Phones (<= 400px) */
-@media (max-width: 400px) {
+/* 5. Compact Mobile Phones (<= 480px) */
+@media (max-width: 480px) {
   .logo-text span:first-child {
     font-size: 1.15rem;
   }
   .user-name {
-    display: none; /* Keep avatar and ID */
+    display: none; /* Keep avatar, level tag and ID */
   }
   .btn-lang-toggle {
     padding: 5px 8px;
     font-size: 0.8rem;
+  }
+  .game-card-actions {
+    flex-direction: column;
+  }
+  .btn-invite-card {
+    justify-content: center;
+  }
+}
+
+/* 6. Very Small Screens (<= 360px) */
+@media (max-width: 360px) {
+  .logo-badge {
+    display: none;
+  }
+  .user-id-tag {
+    display: none;
+  }
+  .hero-banner {
+    padding: 16px 12px;
   }
 }
 
@@ -1804,8 +1966,13 @@ main {
 .lb-filter-pills {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
   margin-top: 10px;
+  scrollbar-width: thin;
+  max-width: 100%;
 }
 
 .lb-filter-btn {
@@ -1818,6 +1985,8 @@ main {
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .lb-filter-btn:hover {
@@ -1837,23 +2006,27 @@ main {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  gap: clamp(12px, 3vw, 28px);
+  gap: clamp(10px, 2.5vw, 28px);
   padding: 20px 0 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .podium-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 20px 16px;
+  padding: clamp(14px, 2vw, 20px) clamp(10px, 1.5vw, 16px);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  width: min(220px, 30vw);
+  width: clamp(125px, 24vw, 220px);
+  min-width: 115px;
   position: relative;
   transition: transform 0.2s;
   backdrop-filter: blur(10px);
+  flex-shrink: 0;
 }
 
 .podium-card:hover {
@@ -1947,13 +2120,16 @@ main {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   backdrop-filter: blur(12px);
+  scrollbar-width: thin;
 }
 
 .lb-table {
   display: flex;
   flex-direction: column;
+  min-width: 620px;
 }
 
 .lb-row {
@@ -2245,10 +2421,30 @@ main {
 
 /* Mobile Leaderboard Fallback */
 @media (max-width: 650px) {
+  .lb-table {
+    min-width: 100%;
+  }
   .lb-col-level, .lb-col-ach {
     display: none;
   }
   .lb-header-row .lb-col-level, .lb-header-row .lb-col-ach {
     display: none;
+  }
+  .lb-row {
+    padding: 12px 12px;
+    gap: 8px;
+  }
+  .lb-col-rank {
+    width: 40px;
+  }
+  .lb-col-score {
+    width: 85px;
+  }
+  .lb-col-action {
+    width: 80px;
+  }
+  .btn-lb-action {
+    padding: 5px 8px;
+    font-size: 0.75rem;
   }
 }

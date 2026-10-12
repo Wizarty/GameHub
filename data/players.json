@@ -71,14 +71,15 @@
     "id": "GH-97AD",
     "nickname": "NovaGamer_57",
     "avatar": "avatar-cyber-mage",
-    "xp": 975,
-    "level": 5,
+    "xp": 1030,
+    "level": 6,
     "achievements": [
       "first_steps",
       "phantom_slayer",
       "arcade_veteran",
       "rising_star",
-      "matrix_overlord"
+      "matrix_overlord",
+      "socializer"
     ],
     "scores": {
       "phantom-alchemist": 2600
