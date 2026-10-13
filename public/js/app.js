@@ -1,8 +1,9 @@
-// GameHub Main Controller & UI Orchestration (with i18n & Mobile navigation)
+// GameHub Main Controller & UI Orchestration (NEXT SESSION Engine)
 class GameHubApp {
   constructor() {
     this.selectedAvatar = 'avatar-cyber-samurai';
     this.toastContainer = null;
+    this.activeSection = 'discover';
   }
 
   init() {
@@ -13,11 +14,13 @@ class GameHubApp {
       window.i18n.updateDOM();
     }
 
-    // 2. Setup Core UI Listeners First (Navigation, Language, Modals)
+    // 2. Setup Core UI Listeners (Navigation, Language, Modals, Esc key)
     this.setupLanguageSwitcher();
     this.setupNavigation();
     this.setupProfileModals();
     this.setupSearchById();
+    this.setupKeyboardShortcuts();
+    this.setupScrollSpy();
     this.handleUrlParams();
 
     // 3. Initialize Independent Submodules Safely
@@ -66,14 +69,17 @@ class GameHubApp {
 
     window.addEventListener('languageChanged', () => {
       this.updateAvatarTooltips();
+      const p = window.hubSocket ? window.hubSocket.player : null;
+      this.updateHeaderProfile(p);
     });
 
-    // Check if user is already logged in
+    // Check if user is already logged in:
+    // IMPORTANT: As per design requirements, do NOT block guests with mandatory modal on initial visit!
     const saved = window.hubSocket && window.hubSocket.getSavedProfile ? window.hubSocket.getSavedProfile() : null;
-    if (!saved || !saved.nickname) {
-      this.openOnboardingModal();
-    } else {
+    if (saved && saved.nickname) {
       this.updateHeaderProfile(saved);
+    } else {
+      this.updateHeaderProfile(null);
     }
   }
 
@@ -94,100 +100,65 @@ class GameHubApp {
     const navPlayers = document.getElementById('navPlayers');
     const navLeaderboard = document.getElementById('navLeaderboard');
     const navAchievements = document.getElementById('navAchievements');
+    const navCreators = document.getElementById('navCreators');
 
     // Mobile Bottom Nav items
     const mobNavCatalog = document.getElementById('mobNavCatalog');
     const mobNavChat = document.getElementById('mobNavChat');
-    const mobNavPlayers = document.getElementById('mobNavPlayers');
     const mobNavLeaderboard = document.getElementById('mobNavLeaderboard');
     const mobNavAchievements = document.getElementById('mobNavAchievements');
-    const mobNavAddGame = document.getElementById('mobNavAddGame');
 
-    const viewCatalog = document.getElementById('viewCatalog');
-    const viewSocial = document.getElementById('viewSocial');
-    const viewLeaderboard = document.getElementById('viewLeaderboard');
-
-    const switchView = (target) => {
-      [navCatalog, navChat, navPlayers, navLeaderboard].forEach(b => b && b.classList.remove('active'));
-      [mobNavCatalog, mobNavChat, mobNavPlayers, mobNavLeaderboard].forEach(b => b && b.classList.remove('active'));
-
-      if (target === 'catalog') {
-        if (navCatalog) navCatalog.classList.add('active');
-        if (mobNavCatalog) mobNavCatalog.classList.add('active');
-        if (viewCatalog) viewCatalog.classList.remove('hidden');
-        if (viewSocial) viewSocial.classList.add('hidden');
-        if (viewLeaderboard) viewLeaderboard.classList.add('hidden');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else if (target === 'chat' || target === 'players') {
-        if (target === 'chat') {
-          if (navChat) navChat.classList.add('active');
-          if (mobNavChat) mobNavChat.classList.add('active');
-        } else {
-          if (navPlayers) navPlayers.classList.add('active');
-          if (mobNavPlayers) mobNavPlayers.classList.add('active');
-        }
-        if (viewCatalog) viewCatalog.classList.add('hidden');
-        if (viewSocial) viewSocial.classList.remove('hidden');
-        if (viewLeaderboard) viewLeaderboard.classList.add('hidden');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else if (target === 'leaderboard') {
-        if (navLeaderboard) navLeaderboard.classList.add('active');
-        if (mobNavLeaderboard) mobNavLeaderboard.classList.add('active');
-        if (viewCatalog) viewCatalog.classList.add('hidden');
-        if (viewSocial) viewSocial.classList.add('hidden');
-        if (viewLeaderboard) {
-          viewLeaderboard.classList.remove('hidden');
-          if (window.gameHubGamification && window.gameHubGamification.fetchAndRenderLeaderboard) {
-            window.gameHubGamification.fetchAndRenderLeaderboard(window.gameHubGamification.currentLbCategory);
-          }
-        }
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+    const scrollToSection = (sectionId) => {
+      const target = document.getElementById(sectionId);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     };
 
-    if (navCatalog) navCatalog.addEventListener('click', () => switchView('catalog'));
-    if (navChat) navChat.addEventListener('click', () => switchView('chat'));
-    if (navPlayers) navPlayers.addEventListener('click', () => switchView('players'));
-    if (navLeaderboard) navLeaderboard.addEventListener('click', () => switchView('leaderboard'));
+    if (navCatalog) navCatalog.addEventListener('click', () => scrollToSection('discover'));
+    if (navChat) navChat.addEventListener('click', () => scrollToSection('connect'));
+    if (navPlayers) navPlayers.addEventListener('click', () => scrollToSection('connect'));
+    if (navLeaderboard) navLeaderboard.addEventListener('click', () => scrollToSection('progress'));
+    if (navCreators) navCreators.addEventListener('click', () => scrollToSection('build'));
+
     if (navAchievements) navAchievements.addEventListener('click', () => {
       if (window.gameHubGamification && window.gameHubGamification.openAchievementsModal) {
         window.gameHubGamification.openAchievementsModal();
       } else {
-        const modal = document.getElementById('achievementsModal');
-        if (modal) modal.classList.remove('hidden');
+        document.getElementById('achievementsModal')?.classList.remove('hidden');
       }
     });
 
-    if (mobNavCatalog) mobNavCatalog.addEventListener('click', () => switchView('catalog'));
-    if (mobNavChat) mobNavChat.addEventListener('click', () => switchView('chat'));
-    if (mobNavPlayers) mobNavPlayers.addEventListener('click', () => switchView('players'));
-    if (mobNavLeaderboard) mobNavLeaderboard.addEventListener('click', () => switchView('leaderboard'));
+    if (mobNavCatalog) mobNavCatalog.addEventListener('click', () => scrollToSection('discover'));
+    if (mobNavChat) mobNavChat.addEventListener('click', () => scrollToSection('connect'));
+    if (mobNavLeaderboard) mobNavLeaderboard.addEventListener('click', () => scrollToSection('progress'));
     if (mobNavAchievements) mobNavAchievements.addEventListener('click', () => {
       if (window.gameHubGamification && window.gameHubGamification.openAchievementsModal) {
         window.gameHubGamification.openAchievementsModal();
       } else {
-        const modal = document.getElementById('achievementsModal');
-        if (modal) modal.classList.remove('hidden');
+        document.getElementById('achievementsModal')?.classList.remove('hidden');
       }
     });
-    if (mobNavAddGame) mobNavAddGame.addEventListener('click', () => {
-      const modal = document.getElementById('addGameModal');
-      if (modal) modal.classList.remove('hidden');
-    });
 
-    // Logo click returns to catalog
+    // Logo click returns to top
     const logo = document.querySelector('.logo-group');
     if (logo) logo.addEventListener('click', (e) => {
       e.preventDefault();
-      switchView('catalog');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
-    // Add game button in header
+    // Add game button in header & build section
     const btnAddGame = document.getElementById('btnAddGameHeader');
     if (btnAddGame) {
       btnAddGame.addEventListener('click', () => {
-        const modal = document.getElementById('addGameModal');
-        if (modal) modal.classList.remove('hidden');
+        document.getElementById('addGameModal')?.classList.remove('hidden');
+      });
+    }
+
+    const btnAddGameSection = document.getElementById('btnAddGameSection');
+    if (btnAddGameSection) {
+      btnAddGameSection.addEventListener('click', () => {
+        document.getElementById('addGameModal')?.classList.remove('hidden');
       });
     }
 
@@ -208,7 +179,7 @@ class GameHubApp {
       });
     });
 
-    // Copy my ID button in hero
+    // Copy my ID button
     const btnCopyMyId = document.getElementById('btnCopyMyId');
     if (btnCopyMyId) {
       btnCopyMyId.addEventListener('click', () => {
@@ -217,21 +188,75 @@ class GameHubApp {
           navigator.clipboard.writeText(myId).then(() => {
             this.showSimpleToast(window.i18n.t('hero.copied_toast', { id: myId }), 'success');
           });
+        } else {
+          this.openOnboardingModal();
         }
       });
     }
+
+    // Guest CTA button in progress section
+    const btnCreateProfile = document.getElementById('btnCreateProfileProgress');
+    if (btnCreateProfile) {
+      btnCreateProfile.addEventListener('click', () => this.openOnboardingModal());
+    }
+  }
+
+  setupScrollSpy() {
+    const sections = ['discover', 'connect', 'progress', 'build'];
+    const navMap = {
+      'discover': ['navCatalog', 'mobNavCatalog'],
+      'connect': ['navChat', 'mobNavChat'],
+      'progress': ['navLeaderboard', 'mobNavLeaderboard'],
+      'build': ['navCreators']
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          document.querySelectorAll('.nav-btn, .mob-nav-btn').forEach(b => b.classList.remove('active'));
+          const ids = navMap[id] || [];
+          ids.forEach(btnId => {
+            document.getElementById(btnId)?.classList.add('active');
+          });
+        }
+      });
+    }, {
+      threshold: 0.35,
+      rootMargin: '-80px 0px -40% 0px'
+    });
+
+    sections.forEach(sId => {
+      const el = document.getElementById(sId);
+      if (el) observer.observe(el);
+    });
+  }
+
+  setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        // Close modals
+        document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m => m.classList.add('hidden'));
+
+        // Close in-game drawer if open
+        if (window.gameHubChat && window.gameHubChat.inGameDrawer && window.gameHubChat.inGameDrawer.classList.contains('open')) {
+          window.gameHubChat.closeInGameDrawer();
+        }
+      }
+    });
   }
 
   setupProfileModals() {
     this.renderAvatarPicker('onboardingAvatarGrid');
     this.renderAvatarPicker('editAvatarGrid');
 
-    const randomNicks = ['CyberNinja', 'NeonViper', 'PixelKnight', 'QuantumBlade', 'GhostRunner', 'RetroPilot', 'ShadowZero', 'AeroDrifter', 'NovaGamer', 'HyperByte', 'MatrixStriker', 'EchoPhantom'];
+    const randomNicks = ['Vanguard', 'HexRunner', 'NovaStrike', 'QuantumBlade', 'CipherGhost', 'AeroDrift', 'NeonPhantom', 'ZeroVector', 'PulseKnight', 'GridWalker'];
     const btnRandNick = document.getElementById('btnRandomNick');
     if (btnRandNick) {
       btnRandNick.addEventListener('click', () => {
         const nick = randomNicks[Math.floor(Math.random() * randomNicks.length)] + '_' + Math.floor(Math.random() * 99);
-        document.getElementById('onboardNickname').value = nick;
+        const input = document.getElementById('onboardNickname');
+        if (input) input.value = nick;
       });
     }
 
@@ -244,7 +269,7 @@ class GameHubApp {
 
         window.hubSocket.login(nickname, this.selectedAvatar, null, (res) => {
           if (res && res.success) {
-            document.getElementById('onboardingModal').classList.add('hidden');
+            document.getElementById('onboardingModal')?.classList.add('hidden');
             this.updateHeaderProfile(res.player);
             this.showSimpleToast(`Welcome, ${res.player.nickname}! ID: ${res.player.id}`, 'success');
           }
@@ -256,15 +281,14 @@ class GameHubApp {
     if (headerProfileBadge) {
       headerProfileBadge.addEventListener('click', () => {
         const p = window.hubSocket ? window.hubSocket.player : null;
-        if (!p) {
+        if (!p || !p.nickname) {
           this.openOnboardingModal();
           return;
         }
         const editNick = document.getElementById('editNickname');
         if (editNick) editNick.value = p.nickname;
         this.selectAvatar(p.avatar || 'avatar-cyber-samurai', 'editAvatarGrid');
-        const editModal = document.getElementById('editProfileModal');
-        if (editModal) editModal.classList.remove('hidden');
+        document.getElementById('editProfileModal')?.classList.remove('hidden');
       });
     }
 
@@ -278,7 +302,7 @@ class GameHubApp {
 
         window.hubSocket.login(nickname, this.selectedAvatar, currentId, (res) => {
           if (res && res.success) {
-            document.getElementById('editProfileModal').classList.add('hidden');
+            document.getElementById('editProfileModal')?.classList.add('hidden');
             this.updateHeaderProfile(res.player);
             this.showSimpleToast(window.i18n.t('profile.saved_toast'), 'success');
           }
@@ -292,6 +316,8 @@ class GameHubApp {
     if (!grid) return;
     grid.innerHTML = '';
     const lang = window.i18n ? window.i18n.getLanguage() : 'en';
+
+    if (typeof AVATARS === 'undefined') return;
 
     AVATARS.forEach(av => {
       const opt = document.createElement('div');
@@ -310,6 +336,8 @@ class GameHubApp {
 
   updateAvatarTooltips() {
     const lang = window.i18n ? window.i18n.getLanguage() : 'en';
+    if (typeof getAvatarName !== 'function') return;
+
     document.querySelectorAll('.avatar-opt').forEach(opt => {
       const id = opt.dataset.avatarId;
       if (id) {
@@ -320,8 +348,8 @@ class GameHubApp {
 
   selectAvatar(avatarId, gridId = null) {
     this.selectedAvatar = avatarId;
-    const targetGrids = gridId 
-      ? [document.getElementById(gridId)] 
+    const targetGrids = gridId
+      ? [document.getElementById(gridId)]
       : [document.getElementById('onboardingAvatarGrid'), document.getElementById('editAvatarGrid')];
     targetGrids.forEach(g => {
       if (!g) return;
@@ -337,38 +365,84 @@ class GameHubApp {
   }
 
   updateHeaderProfile(player) {
-    if (!player) return;
     const nameEl = document.getElementById('headerPlayerName');
     const idEl = document.getElementById('headerPlayerId');
     const avatarEl = document.getElementById('headerPlayerAvatar');
-    const heroIdEl = document.getElementById('heroMyId');
+    const lvlEl = document.getElementById('headerPlayerLevelBadge');
+    const guestBtn = document.getElementById('headerGuestBtn');
+    const userBadge = document.getElementById('headerProfileBadge');
 
-    if (nameEl) nameEl.innerText = player.nickname;
-    if (idEl) idEl.innerText = player.id;
-    if (heroIdEl) heroIdEl.innerText = player.id;
-    if (avatarEl) avatarEl.innerHTML = getAvatarSvg(player.avatar);
+    const progressCardGuest = document.getElementById('progressGuestBox');
+    const progressCardUser = document.getElementById('progressUserBox');
+
+    if (player && player.nickname) {
+      if (guestBtn) guestBtn.classList.add('hidden');
+      if (userBadge) userBadge.classList.remove('hidden');
+
+      if (nameEl) nameEl.innerText = player.nickname;
+      if (idEl) idEl.innerText = player.id;
+      if (lvlEl) lvlEl.innerText = `Lv.${player.level || 1}`;
+      if (avatarEl && typeof getAvatarSvg === 'function') {
+        avatarEl.innerHTML = getAvatarSvg(player.avatar);
+      }
+
+      const heroIdEl = document.getElementById('heroMyId');
+      if (heroIdEl) heroIdEl.innerText = player.id;
+
+      if (progressCardGuest) progressCardGuest.classList.add('hidden');
+      if (progressCardUser) progressCardUser.classList.remove('hidden');
+    } else {
+      // Guest state
+      if (guestBtn) guestBtn.classList.remove('hidden');
+      if (userBadge) userBadge.classList.add('hidden');
+
+      const heroIdEl = document.getElementById('heroMyId');
+      if (heroIdEl) heroIdEl.innerText = '#GH-????';
+
+      if (progressCardGuest) progressCardGuest.classList.remove('hidden');
+      if (progressCardUser) progressCardUser.classList.add('hidden');
+    }
   }
 
   setupSearchById() {
-    const searchInput = document.getElementById('headerSearchIdInput');
-    if (!searchInput) return;
+    const searchInputs = [
+      document.getElementById('headerSearchIdInput'),
+      document.getElementById('connectSearchInput')
+    ];
 
-    searchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        const val = searchInput.value.trim().toUpperCase();
-        if (!val) return;
+    searchInputs.forEach(input => {
+      if (!input) return;
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const val = input.value.trim().toUpperCase();
+          if (!val) return;
 
-        let cleanId = val;
-        if (!cleanId.startsWith('GH-') && !cleanId.startsWith('#GH-')) {
-          cleanId = 'GH-' + cleanId.replace('#', '');
-        } else {
-          cleanId = cleanId.replace('#', '');
+          let cleanId = val;
+          if (!cleanId.startsWith('GH-') && !cleanId.startsWith('#GH-')) {
+            cleanId = 'GH-' + cleanId.replace('#', '');
+          } else {
+            cleanId = cleanId.replace('#', '');
+          }
+
+          this.showPlayerCard(cleanId);
+          input.value = '';
         }
-
-        this.showPlayerCard(cleanId);
-        searchInput.value = '';
-      }
+      });
     });
+
+    const btnConnectSearch = document.getElementById('btnConnectSearch');
+    if (btnConnectSearch) {
+      btnConnectSearch.addEventListener('click', () => {
+        const input = document.getElementById('connectSearchInput');
+        if (!input) return;
+        const val = input.value.trim().toUpperCase();
+        if (!val) return;
+        let cleanId = val.replace('#', '');
+        if (!cleanId.startsWith('GH-')) cleanId = 'GH-' + cleanId;
+        this.showPlayerCard(cleanId);
+        input.value = '';
+      });
+    }
   }
 
   async showPlayerCard(playerId) {
@@ -384,47 +458,61 @@ class GameHubApp {
       const btnChat = document.getElementById('btnPlayerCardChat');
       const btnInvite = document.getElementById('btnPlayerCardInvite');
 
+      if (!modal) return;
+
       if (data.success) {
         const p = data.player;
-        avatarBox.innerHTML = getAvatarSvg(p.avatar);
-        nickBox.innerText = p.nickname;
-        idBox.innerText = p.id;
+        if (avatarBox) avatarBox.innerHTML = typeof getAvatarSvg === 'function' ? getAvatarSvg(p.avatar) : '';
+        if (nickBox) nickBox.innerText = p.nickname;
+        if (idBox) idBox.innerText = p.id;
         const lvlBadge = document.getElementById('playerCardLevelBadge');
         if (lvlBadge) lvlBadge.innerText = `Lv.${p.level || 1}`;
 
-        let statusText = p.status === 'in_game' 
-          ? `🎮 ${window.i18n.t('social.status_ingame', { game: p.currentGame })}` 
-          : (p.status === 'online' ? `🟢 ${window.i18n.t('social.status_online')}` : `⚪ ${window.i18n.t('social.status_offline')}`);
-        statusBox.innerText = statusText;
+        let statusText = p.status === 'in_game'
+          ? `Playing: ${p.currentGame}`
+          : (p.status === 'online' ? window.i18n.t('social.status_online') : window.i18n.t('social.status_offline'));
+        if (statusBox) statusBox.innerText = statusText;
 
-        btnChat.onclick = () => {
-          modal.classList.add('hidden');
-          document.getElementById('navChat').click();
-          window.gameHubChat.openDirectChat(p.id, p.nickname);
-        };
+        if (btnChat) {
+          btnChat.onclick = () => {
+            modal.classList.add('hidden');
+            document.getElementById('connect')?.scrollIntoView({ behavior: 'smooth' });
+            if (window.gameHubChat && window.gameHubChat.openDirectChat) {
+              window.gameHubChat.openDirectChat(p.id, p.nickname);
+            }
+          };
+        }
 
-        btnInvite.onclick = () => {
-          modal.classList.add('hidden');
-          window.gameHubCatalog.openInviteModalForPlayer(p.id);
-        };
+        if (btnInvite) {
+          btnInvite.onclick = () => {
+            modal.classList.add('hidden');
+            window.gameHubCatalog.openInviteModalForPlayer(p.id);
+          };
+        }
 
         modal.classList.remove('hidden');
       } else {
-        avatarBox.innerHTML = getAvatarSvg('avatar-neon-hacker');
-        nickBox.innerText = 'Player ' + playerId;
-        idBox.innerText = playerId;
-        statusBox.innerText = `⚪ ${window.i18n.t('social.status_offline')}`;
+        if (avatarBox) avatarBox.innerHTML = typeof getAvatarSvg === 'function' ? getAvatarSvg('avatar-neon-hacker') : '';
+        if (nickBox) nickBox.innerText = 'Player ' + playerId;
+        if (idBox) idBox.innerText = playerId;
+        if (statusBox) statusBox.innerText = window.i18n.t('social.status_offline');
 
-        btnChat.onclick = () => {
-          modal.classList.add('hidden');
-          document.getElementById('navChat').click();
-          window.gameHubChat.openDirectChat(playerId);
-        };
+        if (btnChat) {
+          btnChat.onclick = () => {
+            modal.classList.add('hidden');
+            document.getElementById('connect')?.scrollIntoView({ behavior: 'smooth' });
+            if (window.gameHubChat && window.gameHubChat.openDirectChat) {
+              window.gameHubChat.openDirectChat(playerId);
+            }
+          };
+        }
 
-        btnInvite.onclick = () => {
-          modal.classList.add('hidden');
-          window.gameHubCatalog.openInviteModalForPlayer(playerId);
-        };
+        if (btnInvite) {
+          btnInvite.onclick = () => {
+            modal.classList.add('hidden');
+            window.gameHubCatalog.openInviteModalForPlayer(playerId);
+          };
+        }
 
         modal.classList.remove('hidden');
       }
@@ -439,7 +527,7 @@ class GameHubApp {
     const toast = document.createElement('div');
     toast.className = 'invite-toast';
 
-    const avatarSvg = getAvatarSvg(invite.from ? invite.from.avatar : 'avatar-cyber-samurai');
+    const avatarSvg = typeof getAvatarSvg === 'function' ? getAvatarSvg(invite.from ? invite.from.avatar : 'avatar-cyber-samurai') : '';
 
     toast.innerHTML = `
       <div class="toast-top">
@@ -447,9 +535,9 @@ class GameHubApp {
           ${avatarSvg}
         </div>
         <div class="toast-details">
-          <div class="toast-from-name">🎮 ${invite.from.nickname} (${invite.from.id})</div>
+          <div class="toast-from-name">${invite.from.nickname} (${invite.from.id})</div>
           <div class="toast-game-line">${window.i18n.t('toast.invite_body', { game: invite.gameTitle })}</div>
-          ${invite.message ? `<div style="font-size:0.8rem; color:#94a3b8; margin-top:2px;">«${invite.message}»</div>` : ''}
+          ${invite.message ? `<div class="toast-msg-quote">«${invite.message}»</div>` : ''}
         </div>
       </div>
       <div class="toast-actions">
@@ -476,14 +564,12 @@ class GameHubApp {
   }
 
   showSimpleToast(text, type = 'info') {
+    if (!this.toastContainer) return;
     const toast = document.createElement('div');
-    toast.className = 'invite-toast';
-    toast.style.borderColor = type === 'success' ? 'var(--neon-green)' : 'var(--neon-cyan)';
+    toast.className = `simple-toast toast-${type}`;
     toast.innerHTML = `
-      <div style="font-size:0.92rem; color:#fff; display:flex; align-items:center; gap:8px;">
-        <span>${type === 'success' ? '✅' : 'ℹ️'}</span>
-        <span>${text}</span>
-      </div>
+      <span class="toast-icon">${type === 'success' ? '✓' : 'ℹ'}</span>
+      <span class="toast-text">${text}</span>
     `;
     this.toastContainer.appendChild(toast);
     setTimeout(() => {
@@ -522,4 +608,3 @@ if (document.readyState === 'loading') {
 } else {
   initGameHub();
 }
-

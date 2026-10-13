@@ -392,12 +392,14 @@ class GameHubChat {
     this.updateInGameInputPlaceholder();
   }
 
-  updateInputPlaceholder() {
+  updateInputPlaceholder(shouldFocus = false) {
     if (!this.inputField) return;
     this.inputField.placeholder = this.activeTab === 'global' 
       ? window.i18n.t('social.input_placeholder_global')
       : window.i18n.t('social.input_placeholder_dm', { id: this.activeTab });
-    this.inputField.focus();
+    if (shouldFocus) {
+      this.inputField.focus();
+    }
   }
 
   updateInGameInputPlaceholder() {
@@ -426,9 +428,9 @@ class GameHubChat {
 
     this.openTabs.forEach(tabId => {
       const btn = document.createElement('button');
-      btn.className = `chat-tab-btn ${this.activeTab === tabId ? 'active' : ''}`;
+      btn.className = `chat-tab chat-tab-btn ${this.activeTab === tabId ? 'active' : ''}`;
 
-      let title = tabId === 'global' ? window.i18n.t('social.global_tab') : `👤 ${tabId}`;
+      let title = tabId === 'global' ? window.i18n.t('social.global_tab') : `@${tabId}`;
       const unread = this.unreadCounts.get(tabId) || 0;
 
       let unreadBadge = '';
@@ -462,9 +464,9 @@ class GameHubChat {
 
     this.openTabs.forEach(tabId => {
       const btn = document.createElement('button');
-      btn.className = `ingame-chat-tab-btn ${this.activeTab === tabId ? 'active' : ''}`;
+      btn.className = `chat-tab ingame-chat-tab-btn ${this.activeTab === tabId ? 'active' : ''}`;
 
-      let title = tabId === 'global' ? window.i18n.t('social.global_tab') : `👤 ${tabId}`;
+      let title = tabId === 'global' ? window.i18n.t('social.global_tab') : `@${tabId}`;
       const unread = this.unreadCounts.get(tabId) || 0;
 
       let unreadBadge = '';

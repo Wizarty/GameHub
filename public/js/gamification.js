@@ -1,4 +1,4 @@
-// GameHub Gamification: Levels, XP, Leaderboard & Achievements
+// GameHub Gamification: Levels, XP, Leaderboard & Achievements (NEXT SESSION Engine)
 class GameHubGamification {
   constructor() {
     this.achievements = [];
@@ -16,34 +16,36 @@ class GameHubGamification {
 
   async init() {
     this.setupListeners();
-    this.fetchAchievements().catch(e => console.warn('fetchAchievements error:', e));
+    await this.fetchAchievements().catch(e => console.warn('fetchAchievements error:', e));
+    this.fetchAndRenderLeaderboard(this.currentLbCategory);
 
     // Listen to Socket events
-    window.hubSocket.on('player:ready', ({ player }) => {
-      if (player) {
-        this.updatePlayerStats(player);
-      }
-    });
+    if (window.hubSocket && window.hubSocket.on) {
+      window.hubSocket.on('player:ready', ({ player }) => {
+        if (player) {
+          this.updatePlayerStats(player);
+        }
+      });
 
-    window.hubSocket.on('player:stats_update', (data) => {
-      this.updatePlayerStats(data);
-    });
+      window.hubSocket.on('player:stats_update', (data) => {
+        this.updatePlayerStats(data);
+      });
 
-    window.hubSocket.on('player:level_up', (data) => {
-      this.showLevelUpCelebration(data.level, data.xp, data.levelInfo);
-    });
+      window.hubSocket.on('player:level_up', (data) => {
+        this.showLevelUpCelebration(data.level, data.xp, data.levelInfo);
+      });
 
-    window.hubSocket.on('achievement:unlocked', (ach) => {
-      this.showAchievementCelebration(ach);
-      this.playerAchievements.add(ach.id);
-    });
+      window.hubSocket.on('achievement:unlocked', (ach) => {
+        this.showAchievementCelebration(ach);
+        this.playerAchievements.add(ach.id);
+        this.renderPlayerStatsUI();
+      });
+    }
 
     window.addEventListener('languageChanged', () => {
       this.renderPlayerStatsUI();
-      if (!document.getElementById('viewLeaderboard').classList.contains('hidden')) {
-        this.fetchAndRenderLeaderboard(this.currentLbCategory);
-      }
-      if (!document.getElementById('achievementsModal').classList.contains('hidden')) {
+      this.fetchAndRenderLeaderboard(this.currentLbCategory);
+      if (!document.getElementById('achievementsModal')?.classList.contains('hidden')) {
         this.renderAchievementsModal();
       }
     });
@@ -62,6 +64,7 @@ class GameHubGamification {
       const data = await res.json();
       if (data.success) {
         this.achievements = data.achievements;
+        this.renderFeaturedAchievements();
       }
     } catch (e) {
       console.error('Error fetching achievements:', e);
@@ -91,21 +94,13 @@ class GameHubGamification {
       });
     });
 
-    // Open Achievements modal button in hero or nav
-    const btnHeroAch = document.getElementById('btnHeroAchievements');
-    if (btnHeroAch) {
-      btnHeroAch.addEventListener('click', () => this.openAchievementsModal());
-    }
-
-    const btnNavAch = document.getElementById('navAchievements');
-    if (btnNavAch) {
-      btnNavAch.addEventListener('click', () => this.openAchievementsModal());
-    }
-
-    const mobNavAch = document.getElementById('mobNavAchievements');
-    if (mobNavAch) {
-      mobNavAch.addEventListener('click', () => this.openAchievementsModal());
-    }
+    // Open Achievements modal triggers
+    ['btnHeroAchievements', 'navAchievements', 'mobNavAchievements', 'btnViewAllAch'].forEach(btnId => {
+      const btn = document.getElementById(btnId);
+      if (btn) {
+        btn.addEventListener('click', () => this.openAchievementsModal());
+      }
+    });
   }
 
   updatePlayerStats(data) {
@@ -135,27 +130,76 @@ class GameHubGamification {
       headerLvlBadge.innerText = `Lv.${lvl}`;
     }
 
-    // Hero banner level & progress
+    // Hero banner / Progress section level badges
     const heroLvlBadge = document.getElementById('heroLevelBadge');
     if (heroLvlBadge) {
-      heroLvlBadge.innerText = window.i18n.t('hero.level_tag', { level: lvl }) + ` • ${lvlTitle}`;
+      heroLvlBadge.innerText = `${window.i18n.t('hero.level_tag', { level: lvl })} · ${lvlTitle}`;
     }
 
-    const heroXpBar = document.getElementById('heroXpProgressBar');
-    const heroXpText = document.getElementById('heroXpText');
+    const progressLvlBadge = document.getElementById('progressUserLevelBadge');
+    if (progressLvlBadge) {
+      progressLvlBadge.innerText = `Lv.${lvl} · ${lvlTitle}`;
+    }
+
+    // XP Progress Bars
+    const xpBars = [
+      document.getElementById('heroXpProgressBar'),
+      document.getElementById('progressXpProgressBar')
+    ];
+    const xpTexts = [
+      document.getElementById('heroXpText'),
+      document.getElementById('progressXpText')
+    ];
 
     if (this.playerStats.levelInfo) {
       const li = this.playerStats.levelInfo;
-      if (heroXpBar) heroXpBar.style.width = `${li.progressPercent}%`;
-      if (heroXpText) heroXpText.innerText = `${li.xpInCurrentLevel} / ${li.xpNeededForLevel} XP (${li.progressPercent}%)`;
+      xpBars.forEach(b => { if (b) b.style.width = `${Math.max(4, li.progressPercent)}%`; });
+      xpTexts.forEach(t => { if (t) t.innerText = `${li.xpInCurrentLevel} / ${li.xpNeededForLevel} XP (${li.progressPercent}%)`; });
     } else {
-      if (heroXpBar) heroXpBar.style.width = `20%`;
-      if (heroXpText) heroXpText.innerText = `${xp} XP`;
+      xpBars.forEach(b => { if (b) b.style.width = '10%'; });
+      xpTexts.forEach(t => { if (t) t.innerText = `${xp} XP`; });
     }
+
+    // Achievements counter badge in Progress section
+    const achCountBadge = document.getElementById('progressAchCount');
+    if (achCountBadge) {
+      achCountBadge.innerText = `${this.playerAchievements.size} / ${this.achievements.length || 14}`;
+    }
+
+    this.renderFeaturedAchievements();
+  }
+
+  renderFeaturedAchievements() {
+    const box = document.getElementById('featuredAchievementsGrid');
+    if (!box) return;
+    box.innerHTML = '';
+    const lang = window.i18n ? window.i18n.getLanguage() : 'en';
+
+    const featured = this.achievements.slice(0, 4);
+    featured.forEach(ach => {
+      const isUnlocked = this.playerAchievements.has(ach.id);
+      const title = lang === 'ru' ? ach.title_ru : ach.title_en;
+      const desc = lang === 'ru' ? ach.desc_ru : ach.desc_en;
+
+      const item = document.createElement('div');
+      item.className = `featured-ach-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+      item.innerHTML = `
+        <div class="ach-mini-icon">${ach.icon}</div>
+        <div class="ach-mini-info">
+          <div class="ach-mini-title">${title}</div>
+          <div class="ach-mini-desc">${desc}</div>
+        </div>
+        <div class="ach-mini-right">
+          <span class="ach-mini-xp">+${ach.xp} XP</span>
+          <span class="ach-mini-status">${isUnlocked ? '✓' : '🔒'}</span>
+        </div>
+      `;
+      box.appendChild(item);
+    });
   }
 
   async submitGameScore(gameId, score, metadata = {}) {
-    const player = window.hubSocket.player;
+    const player = window.hubSocket?.player;
     if (!player) return;
 
     try {
@@ -192,16 +236,16 @@ class GameHubGamification {
       modal.classList.remove('hidden');
     }
 
-    window.hubSocket.playNotificationSound('invite');
-    window.app.showSimpleToast(window.i18n.t('toast.level_up', { level, title: lvlTitle }), 'success');
+    if (window.hubSocket?.playNotificationSound) window.hubSocket.playNotificationSound('invite');
+    if (window.app?.showSimpleToast) window.app.showSimpleToast(window.i18n.t('toast.level_up', { level, title: lvlTitle }), 'success');
   }
 
   showAchievementCelebration(ach) {
     const lang = window.i18n ? window.i18n.getLanguage() : 'en';
     const title = lang === 'ru' ? ach.title_ru : ach.title_en;
 
-    window.hubSocket.playNotificationSound('invite');
-    window.app.showSimpleToast(window.i18n.t('toast.achievement_unlocked', { title, xp: ach.xp }), 'success');
+    if (window.hubSocket?.playNotificationSound) window.hubSocket.playNotificationSound('invite');
+    if (window.app?.showSimpleToast) window.app.showSimpleToast(window.i18n.t('toast.achievement_unlocked', { title, xp: ach.xp }), 'success');
   }
 
   async fetchAndRenderLeaderboard(category = 'xp') {
@@ -209,20 +253,19 @@ class GameHubGamification {
     const podiumBox = document.getElementById('leaderboardPodium');
     if (!container) return;
 
-    container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Loading rankings...</div>`;
+    container.innerHTML = `<div class="lb-loading">Loading rankings...</div>`;
 
     try {
       const res = await fetch(`/api/leaderboard?category=${category}`);
       const data = await res.json();
       if (!data.success || !data.leaderboard || data.leaderboard.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">${window.i18n.t('leaderboard.empty')}</div>`;
+        container.innerHTML = `<div class="lb-empty">${window.i18n.t('leaderboard.empty')}</div>`;
         if (podiumBox) podiumBox.innerHTML = '';
         return;
       }
 
       const list = data.leaderboard;
       const top3 = list.slice(0, 3);
-      const remaining = list.slice(3);
 
       // Render Top 3 Podium
       this.renderPodium(top3, category);
@@ -248,12 +291,12 @@ class GameHubGamification {
         row.className = `lb-row ${idx < 3 ? 'lb-top-row' : ''}`;
 
         let rankBadge = `${idx + 1}`;
-        if (idx === 0) rankBadge = '🥇 1';
-        else if (idx === 1) rankBadge = '🥈 2';
-        else if (idx === 2) rankBadge = '🥉 3';
+        if (idx === 0) rankBadge = '1';
+        else if (idx === 1) rankBadge = '2';
+        else if (idx === 2) rankBadge = '3';
 
-        const avatarSvg = getAvatarSvg(p.avatar);
-        const myId = window.hubSocket.player ? window.hubSocket.player.id : null;
+        const avatarSvg = typeof getAvatarSvg === 'function' ? getAvatarSvg(p.avatar) : '';
+        const myId = window.hubSocket?.player ? window.hubSocket.player.id : null;
         const isSelf = p.id === myId;
         const scoreVal = category === 'xp' ? `${p.xp} XP` : `${p.score} pts`;
 
@@ -277,14 +320,14 @@ class GameHubGamification {
             <span class="lb-score-val">${scoreVal}</span>
           </div>
           <div class="lb-col-ach">
-            <span class="lb-ach-count">⭐ ${p.achievementsCount}</span>
+            <span class="lb-ach-count">${p.achievementsCount}</span>
           </div>
           <div class="lb-col-action">
             ${!isSelf ? `
               <button class="btn-lb-action" onclick="window.gameHubCatalog.openInviteModalForPlayer('${p.id}')">
-                <span>⚡</span> <span>${window.i18n.t('leaderboard.challenge_btn')}</span>
+                <span>${window.i18n.t('leaderboard.challenge_btn')}</span>
               </button>
-            ` : '<span style="color:#64748b; font-size:0.8rem;">—</span>'}
+            ` : '<span class="lb-self-dash">—</span>'}
           </div>
         `;
 
@@ -295,7 +338,7 @@ class GameHubGamification {
 
     } catch (e) {
       console.error(e);
-      container.innerHTML = `<div style="text-align:center; padding:30px; color:#ef4444;">Failed to load leaderboard.</div>`;
+      container.innerHTML = `<div class="lb-error">Failed to load leaderboard.</div>`;
     }
   }
 
@@ -308,9 +351,9 @@ class GameHubGamification {
 
     // Rearrange visually: 2nd place on left, 1st place in center (tallest), 3rd place on right
     const order = [];
-    if (top3[1]) order.push({ data: top3[1], place: 2, badge: '🥈', class: 'place-2' });
-    if (top3[0]) order.push({ data: top3[0], place: 1, badge: '👑', class: 'place-1' });
-    if (top3[2]) order.push({ data: top3[2], place: 3, badge: '🥉', class: 'place-3' });
+    if (top3[1]) order.push({ data: top3[1], place: 2, class: 'place-2' });
+    if (top3[0]) order.push({ data: top3[0], place: 1, class: 'place-1' });
+    if (top3[2]) order.push({ data: top3[2], place: 3, class: 'place-3' });
 
     order.forEach(item => {
       const p = item.data;
@@ -319,15 +362,14 @@ class GameHubGamification {
       card.className = `podium-card ${item.class}`;
 
       card.innerHTML = `
-        <div class="podium-crown">${item.badge}</div>
+        <div class="podium-rank-marker">0${item.place}</div>
         <div class="podium-avatar">
-          ${getAvatarSvg(p.avatar)}
+          ${typeof getAvatarSvg === 'function' ? getAvatarSvg(p.avatar) : ''}
         </div>
         <div class="podium-name">${p.nickname}</div>
         <div class="podium-id">${p.id}</div>
         <div class="podium-score">${scoreVal}</div>
         <div class="podium-level">Level ${p.level}</div>
-        <div class="podium-stand">#${item.place}</div>
       `;
 
       podiumBox.appendChild(card);
@@ -336,7 +378,7 @@ class GameHubGamification {
 
   openAchievementsModal() {
     this.renderAchievementsModal();
-    document.getElementById('achievementsModal').classList.remove('hidden');
+    document.getElementById('achievementsModal')?.classList.remove('hidden');
   }
 
   renderAchievementsModal() {
